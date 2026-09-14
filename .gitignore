@@ -16,3 +16,6 @@ allure-results/
 # Playwright 测试产物（失败截图 / trace）
 test-results/
 *.png
+
+# 会话临时进度追踪（勿提交）
+.progress-tmp.md

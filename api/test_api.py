@@ -602,3 +602,23 @@ def test_cross_store_pay_fail_restores_all(api_client, login_user, payment_mode)
     with allure.step("断言两店库存均回补"):
         assert api_client.store_product(STORE1, 1).json()["stock"] == stock1_before
         assert api_client.store_product(STORE2, 5).json()["stock"] == stock5_before
+
+
+# ---------- 组 9：异步任务（超时未支付自动关单） ----------
+@allure.feature("异步任务")
+@allure.story("超时未支付订单自动取消")
+@allure.severity(allure.severity_level.CRITICAL)
+def test_cancel_expired_orders(api_client, login_user):
+    with allure.step("记录商品初始库存"):
+        store_id, product_id = STORE1, 2
+        stock_before = api_client.store_product(store_id, product_id).json()["stock"]
+    with allure.step("加购并下单（pending，未支付）"):
+        api_client.cart_add(store_id, product_id, 1)
+        order_id = api_client.order_create().json()["order_id"]
+    with allure.step("触发超时订单取消（与 Celery worker 同一份逻辑）"):
+        resp = api_client.cancel_expired(0)
+        assert resp.status_code == 200
+        assert resp.json()["cancelled"] == 1
+    with allure.step("断言订单已取消、库存已回补"):
+        assert api_client.orders().json()["orders"][-1]["status"] == "canceled"
+        assert api_client.store_product(store_id, product_id).json()["stock"] == stock_before

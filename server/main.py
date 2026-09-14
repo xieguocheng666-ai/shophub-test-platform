@@ -289,6 +289,14 @@ if os.getenv("DEBUG_MODE") == "1":
         PAYMENT_MODE = "success"
         return {"status": "reset"}
 
+    @app.post("/debug/cancel-expired")
+    def cancel_expired(seconds: int = 0):
+        """手动触发超时订单取消（与 Celery worker 周期扫描同一份逻辑）。
+
+        seconds=0 取消所有 pending 订单，供测试/演示用。
+        """
+        return db.cancel_expired_orders(seconds)
+
 
 # ---------- 前端静态页面 ----------
 STATIC_DIR = Path(__file__).resolve().parent / "static"

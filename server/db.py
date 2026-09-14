@@ -771,26 +771,67 @@ def pay_order(order_id: int):
         conn.close()
 
 
+def _cancel_order_in_tx(cur, order_id: int) -> bool:
+    """取消订单：回补库存 + 父订单/子订单 → canceled。
+
+    幂等：先做「条件更新」抢占订单行（WHERE status='pending'），
+    只有真的从 pending 改成 canceled 才继续回补库存，避免重复回补。
+    返回是否真的取消了该订单。
+    """
+    cur.execute(
+        "UPDATE orders SET status='canceled' WHERE order_id=%s AND status='pending'",
+        (order_id,),
+    )
+    if cur.rowcount == 0:
+        return False
+    cur.execute(
+        "UPDATE store_product sp "
+        "JOIN sub_orders so ON sp.store_id = so.store_id "
+        "JOIN order_items oi ON oi.sub_order_id = so.sub_order_id "
+        "AND oi.product_id = sp.product_id "
+        "SET sp.stock = sp.stock + oi.quantity "
+        "WHERE so.parent_order_id = %s",
+        (order_id,),
+    )
+    cur.execute(
+        "UPDATE sub_orders SET status='canceled' WHERE parent_order_id=%s", (order_id,)
+    )
+    return True
+
+
 def cancel_order(order_id: int):
-    """支付失败：回补库存 + 父订单/子订单 → canceled（同一事务）。"""
+    """支付失败：取消订单（同一事务）。"""
+    conn = get_conn()
+    try:
+        conn.begin()
+        with conn.cursor() as cur:
+            _cancel_order_in_tx(cur, order_id)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def cancel_expired_orders(timeout_seconds: int):
+    """扫描超时未支付的 pending 订单并取消（Celery 周期任务的核心逻辑）。
+
+    幂等：只处理 pending 且 created_at 超过 timeout 的订单，返回取消数量。
+    """
     conn = get_conn()
     try:
         conn.begin()
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE store_product sp "
-                "JOIN sub_orders so ON sp.store_id = so.store_id "
-                "JOIN order_items oi ON oi.sub_order_id = so.sub_order_id "
-                "AND oi.product_id = sp.product_id "
-                "SET sp.stock = sp.stock + oi.quantity "
-                "WHERE so.parent_order_id = %s",
-                (order_id,),
+                "SELECT order_id FROM orders "
+                "WHERE status='pending' AND created_at <= NOW() - INTERVAL %s SECOND",
+                (int(timeout_seconds),),
             )
-            cur.execute("UPDATE orders SET status='canceled' WHERE order_id=%s", (order_id,))
-            cur.execute(
-                "UPDATE sub_orders SET status='canceled' WHERE parent_order_id=%s", (order_id,)
-            )
+            rows = cur.fetchall()
+            cancelled = sum(1 for r in rows if _cancel_order_in_tx(cur, r["order_id"]))
         conn.commit()
+        return {"cancelled": cancelled}
     except Exception:
         conn.rollback()
         raise

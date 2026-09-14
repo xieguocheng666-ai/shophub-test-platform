@@ -22,3 +22,7 @@ PyMySQL>=1.1
 
 # JWT 鉴权
 PyJWT>=2.8
+
+# 异步任务（超时未支付自动关单）
+celery>=5.3
+redis>=5.0

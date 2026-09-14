@@ -1,0 +1,81 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: shop123
+      MYSQL_DATABASE: shop
+    ports:
+      - "3307:3306"          # 宿主机 3306 已被本地 MySQL 占用，映射到 3307
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pshop123"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  sut:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: shop123
+      DB_NAME: shop
+      SECRET_KEY: dev-secret-key-change-me-not-for-prod
+      DEBUG_MODE: "1"        # 开启故障注入开关（/debug/reset、/debug/payment-mode）
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: shop123
+      DB_NAME: shop
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      ORDER_TIMEOUT_SECONDS: "1800"
+      AUTO_CANCEL_SCAN_SECONDS: "30"
+    depends_on:
+      redis:
+        condition: service_started
+      sut:
+        condition: service_healthy
+    command: celery -A server.celery_app worker --beat --loglevel=info
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      BASE_URL: http://sut:8000
+      SECRET_KEY: dev-secret-key-change-me-not-for-prod   # 与 sut 一致，供伪造过期 token 的测试用
+    depends_on:
+      sut:
+        condition: service_healthy
+    volumes:
+      - ./test-results:/app/test-results   # 失败截图/trace 落到宿主机，便于 CI 上传
+    command: pytest -v
+
+volumes:
+  db_data:
