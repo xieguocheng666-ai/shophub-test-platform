@@ -188,7 +188,10 @@ def pay_order(order_id: int, user: str = Depends(_require_user)):
         raise HTTPException(status_code=400, detail="订单状态不允许支付")
 
     if PAYMENT_MODE == "timeout":
-        time.sleep(PAYMENT_TIMEOUT_SLEEP)  # 超过客户端超时，触发框架重试
+        # 模拟网关无响应：挂起直到客户端超时放弃，订单保持 pending 不变。
+        # 不能在 sleep 后再读全局 PAYMENT_MODE（可能已被后续测试切换），否则会误走 fail/success。
+        time.sleep(PAYMENT_TIMEOUT_SLEEP)
+        return {"status": "timeout", "order_id": order_id}
 
     if PAYMENT_MODE == "fail":
         db.cancel_order(order_id)
