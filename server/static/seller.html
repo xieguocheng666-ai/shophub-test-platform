@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>卖家后台 · My Shop</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="topnav"></div>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>卖家后台</h1>
+      <p>一个商家可开多店，价格与库存下放到每个店铺。</p>
+    </div>
+
+    <!-- 开店 -->
+    <div class="card mb-24">
+      <div class="section-title" style="margin-top: 0;">
+        <h2>开店</h2>
+      </div>
+      <div class="flex items-center gap-12">
+        <input class="form-control grow" id="storeName" placeholder="新店铺名称，如：京东自营旗舰店" />
+        <button class="btn btn-primary" id="createStoreBtn">创建店铺</button>
+      </div>
+    </div>
+
+    <!-- 店铺列表 -->
+    <div id="storeList"></div>
+
+    <!-- 发货控制台 -->
+    <div class="card mt-24">
+      <div class="section-title" style="margin-top: 0;">
+        <h2>发货控制台</h2>
+      </div>
+      <p class="text-sm muted mb-16">
+        子订单支付后，输入子订单号发货（后端当前未提供「待发货列表」接口，此处手动指定）。
+      </p>
+      <div class="flex items-center gap-12">
+        <input class="form-control mono" id="shipSubId" type="number" placeholder="子订单号 sub_order_id" style="max-width: 280px;" />
+        <button class="btn btn-amber" id="shipBtn">发货</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireRole("seller")) throw new Error("redirect");
+    document.getElementById("topnav").innerHTML = renderTopnav("seller");
+
+    const storeListEl = document.getElementById("storeList");
+
+    // ---------- 开店 ----------
+    document.getElementById("createStoreBtn").addEventListener("click", async () => {
+      const name = document.getElementById("storeName").value.trim();
+      if (!name) { toast("请输入店铺名称", "error"); return; }
+      const btn = document.getElementById("createStoreBtn");
+      btn.disabled = true;
+      try {
+        await API.createStore(name);
+        document.getElementById("storeName").value = "";
+        toast("店铺创建成功");
+        loadStores();
+      } catch (err) {
+        toast(err.message, "error");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ---------- 发货 ----------
+    document.getElementById("shipBtn").addEventListener("click", async () => {
+      const subId = parseInt(document.getElementById("shipSubId").value, 10);
+      if (!subId) { toast("请输入子订单号", "error"); return; }
+      const btn = document.getElementById("shipBtn");
+      btn.disabled = true;
+      try {
+        const res = await API.shipSubOrder(subId);
+        toast(`子订单 #${res.sub_order_id} 已发货`);
+        document.getElementById("shipSubId").value = "";
+      } catch (err) {
+        toast(err.message, "error");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ---------- 加载店铺 + 商品 ----------
+    async function loadStores() {
+      try {
+        const data = await API.myStores();
+        if (!data.stores.length) {
+          storeListEl.innerHTML = '<div class="empty"><div class="empty__icon">▦</div><div>还没有店铺，先开一家吧</div></div>';
+          return;
+        }
+        storeListEl.innerHTML = "";
+        for (const s of data.stores) {
+          storeListEl.appendChild(await renderStore(s));
+        }
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    }
+
+    function renderStore(s) {
+      const el = document.createElement("div");
+      el.className = "card mb-24";
+      el.innerHTML = `
+        <div class="section-title" style="margin-top: 0;">
+          <h2>${escapeHtml(s.store_name)} <span class="text-xs muted mono">#${s.store_id}</span></h2>
+        </div>
+
+        <div class="section-title">
+          <h2 style="font-size: 15px;">上架商品</h2>
+        </div>
+        <div class="form-row-3 mb-16">
+          <input class="form-control" data-field="name" placeholder="商品名称" />
+          <input class="form-control mono" data-field="price" type="number" step="0.01" placeholder="价格" />
+          <input class="form-control mono" data-field="stock" type="number" placeholder="库存" />
+        </div>
+        <button class="btn btn-primary btn-sm" data-action="add-product">上架</button>
+
+        <div class="section-title">
+          <h2 style="font-size: 15px;">在售商品</h2>
+        </div>
+        <div class="table-wrap" data-table></div>`;
+      loadProductsInto(s.store_id, el);
+      el.querySelector('[data-action="add-product"]').onclick = () => addProduct(s.store_id, el);
+      return el;
+    }
+
+    async function loadProductsInto(storeId, storeEl) {
+      const tableWrap = storeEl.querySelector("[data-table]");
+      try {
+        const data = await API.storeProducts(storeId);
+        if (!data.items.length) {
+          tableWrap.innerHTML = '<div class="text-sm muted">暂无商品</div>';
+          return;
+        }
+        tableWrap.innerHTML = `
+          <table class="data">
+            <thead>
+              <tr><th>商品</th><th>价格</th><th>库存</th><th style="width: 200px;">改库存</th></tr>
+            </thead>
+            <tbody>
+              ${data.items.map((it) => `
+                <tr>
+                  <td>${escapeHtml(it.name)} <span class="text-xs faint mono">#${it.product_id}</span></td>
+                  <td class="num">${fmtMoney(it.price)}</td>
+                  <td class="num">${it.stock}</td>
+                  <td>
+                    <div class="flex items-center gap-8">
+                      <input class="form-control mono" type="number" value="${it.stock}"
+                             style="height: 32px; width: 90px;" data-stock-input
+                             data-product-id="${it.product_id}" />
+                      <button class="btn btn-ghost btn-sm" data-action="save-stock"
+                              data-product-id="${it.product_id}">保存</button>
+                    </div>
+                  </td>
+                </tr>`).join("")}
+            </tbody>
+          </table>`;
+        tableWrap.querySelectorAll('[data-action="save-stock"]').forEach((btn) => {
+          btn.onclick = async () => {
+            const input = tableWrap.querySelector(`[data-stock-input][data-product-id="${btn.dataset.productId}"]`);
+            const stock = parseInt(input.value, 10);
+            if (isNaN(stock) || stock < 0) { toast("请输入合法的库存", "error"); return; }
+            btn.disabled = true;
+            try {
+              await API.updateStock(storeId, Number(btn.dataset.productId), stock);
+              toast("库存已更新");
+              loadProductsInto(storeId, storeEl);
+            } catch (err) {
+              toast(err.message, "error");
+              btn.disabled = false;
+            }
+          };
+        });
+      } catch (err) {
+        tableWrap.innerHTML = `<div class="text-sm" style="color: var(--danger);">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function addProduct(storeId, storeEl) {
+      const name = storeEl.querySelector('[data-field="name"]').value.trim();
+      const price = parseFloat(storeEl.querySelector('[data-field="price"]').value);
+      const stock = parseInt(storeEl.querySelector('[data-field="stock"]').value, 10);
+      if (!name || isNaN(price) || isNaN(stock)) { toast("请填写完整的商品信息", "error"); return; }
+      const btn = storeEl.querySelector('[data-action="add-product"]');
+      btn.disabled = true;
+      try {
+        await API.addProduct(storeId, name, price, stock);
+        storeEl.querySelector('[data-field="name"]').value = "";
+        storeEl.querySelector('[data-field="price"]').value = "";
+        storeEl.querySelector('[data-field="stock"]').value = "";
+        toast("商品已上架");
+        loadProductsInto(storeId, storeEl);
+      } catch (err) {
+        toast(err.message, "error");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    loadStores();
+  </script>
+</body>
+</html>

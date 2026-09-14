@@ -1,0 +1,21 @@
+# 搜索接口参数化测试数据
+# 字段：keyword / expect_count（预期返回的商品数量）
+match_many:
+  - id: 匹配多个
+    keyword: 罗技
+    expect_count: 4
+
+match_one:
+  - id: 匹配单个
+    keyword: 索尼
+    expect_count: 1
+
+empty_keyword:
+  - id: 空关键词
+    keyword: ""
+    expect_count: 10
+
+no_result:
+  - id: 无结果
+    keyword: 巧乐兹
+    expect_count: 0

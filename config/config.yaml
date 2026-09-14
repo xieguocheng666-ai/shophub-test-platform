@@ -1,0 +1,18 @@
+base_url: http://127.0.0.1:8000
+
+# 测试账号，与 server/db.py 种子数据保持一致
+users:
+  alice:
+    username: alice
+    password: alice123
+  bob:
+    username: bob
+    password: bob123
+  seller1:
+    username: seller1
+    password: seller123
+  seller2:
+    username: seller2
+    password: seller456
+
+# JWT 签名密钥不再存这里，敏感信息统一放 .env（由 conftest 注入 config["secret_key"]）

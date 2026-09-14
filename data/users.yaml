@@ -1,0 +1,19 @@
+# 登录接口参数化测试数据（api 模块阶段启用）
+# 字段：username / password / expect_code
+valid_login:
+  - id: 合法登录
+    username: alice
+    password: alice123
+    expect_code: 200
+
+invalid_password:
+  - id: 密码错误
+    username: alice
+    password: wrong-pass
+    expect_code: 401
+
+unknown_user:
+  - id: 用户不存在
+    username: nobody
+    password: whatever
+    expect_code: 401

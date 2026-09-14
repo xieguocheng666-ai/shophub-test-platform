@@ -1,0 +1,23 @@
+# 被测系统
+fastapi>=0.110
+uvicorn[standard]>=0.29
+
+# 接口测试
+requests>=2.31
+
+# UI 测试（后续 UI 模块使用）
+playwright>=1.45
+
+# 测试框架与报告
+pytest>=8.0
+allure-pytest>=2.13
+
+# 配置解析
+PyYAML>=6.0
+python-dotenv>=1.0
+
+# 数据库
+PyMySQL>=1.1
+
+# JWT 鉴权
+PyJWT>=2.8

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 · My Shop</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <!-- 左侧品牌区 -->
+    <div class="auth-hero">
+      <div class="brand">
+        <span class="brand__mark">S</span>
+        My Shop
+        <span class="brand__sub">平台电商</span>
+      </div>
+      <h1>一间店铺，<br />拆成<span class="hl">父单 + 子单</span>的<br />精密货架。</h1>
+      <p>
+        多商家 · 多店铺 · 价格库存下放到店铺。<br />
+        下单按店铺拆单、原子扣库存、JWT 鉴权、越权防护。
+      </p>
+      <div class="auth-hero__tags">
+        <span>JWT · Bearer</span>
+        <span>SPU / SKU</span>
+        <span>原子扣库存</span>
+        <span>父/子订单</span>
+        <span>RBAC</span>
+      </div>
+    </div>
+
+    <!-- 右侧登录表单 -->
+    <div class="auth-form">
+      <h2>欢迎回来</h2>
+      <p class="sub">买家逛店下单，卖家开店发货。</p>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input class="form-control" id="username" name="username" autocomplete="username"
+                 placeholder="alice / seller1" required />
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input class="form-control" id="password" name="password" type="password"
+                 autocomplete="current-password" placeholder="••••••••" required />
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit">登录</button>
+      </form>
+
+      <div class="auth-accounts">
+        <div class="label">演示账号（点击自动填入）</div>
+        <div class="auth-account-row" data-u="alice" data-p="alice123">
+          <span class="u">alice</span><span class="r">买家 · 爱丽丝</span><span class="p">alice123</span>
+        </div>
+        <div class="auth-account-row" data-u="bob" data-p="bob123">
+          <span class="u">bob</span><span class="r">买家 · 鲍勃</span><span class="p">bob123</span>
+        </div>
+        <div class="auth-account-row" data-u="seller1" data-p="seller123">
+          <span class="u">seller1</span><span class="r">卖家 · 联想官方旗舰店</span><span class="p">seller123</span>
+        </div>
+        <div class="auth-account-row" data-u="seller2" data-p="seller456">
+          <span class="u">seller2</span><span class="r">卖家 · 罗技专卖店</span><span class="p">seller456</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // 已登录则直接按角色跳转
+    if (API.loggedIn() && API.user) {
+      location.href = API.user.role === "seller" ? "/seller.html" : "/index.html";
+    }
+
+    const form = document.getElementById("loginForm");
+    const btn = document.getElementById("loginBtn");
+    const uInput = document.getElementById("username");
+    const pInput = document.getElementById("password");
+
+    // 点击账号行自动填表
+    document.querySelectorAll(".auth-account-row").forEach((row) => {
+      row.style.cursor = "pointer";
+      row.addEventListener("click", () => {
+        uInput.value = row.dataset.u;
+        pInput.value = row.dataset.p;
+        uInput.focus();
+      });
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = uInput.value.trim();
+      const password = pInput.value;
+      if (!username || !password) { toast("请输入用户名和密码", "error"); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> 登录中…';
+      try {
+        const res = await API.login(username, password);
+        API.token = res.token;
+        // 再拉一次 /me，拿到 role 用于路由与展示
+        const me = await API.me();
+        API.user = { username: me.username, nickname: me.nickname, role: me.role };
+        toast("登录成功，欢迎 " + me.nickname);
+        setTimeout(() => {
+          location.href = me.role === "seller" ? "/seller.html" : "/index.html";
+        }, 450);
+      } catch (err) {
+        toast(err.message, "error");
+        btn.disabled = false;
+        btn.textContent = "登录";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>购物车 · My Shop</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="topnav"></div>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>购物车</h1>
+      <p>按店铺分组结算，下单时自动拆成子订单。</p>
+    </div>
+
+    <div id="empty" class="empty" style="display: none;">
+      <div class="empty__icon">▢</div>
+      <div>购物车是空的，先去逛逛吧</div>
+    </div>
+
+    <div id="cartList"></div>
+
+    <div class="card" id="summary" style="display: none;">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs muted">合计金额</div>
+          <div class="mono" id="cartTotal" style="font-size: 26px; font-weight: 700; color: var(--amber);">¥0.00</div>
+        </div>
+        <button class="btn btn-primary btn-lg" id="checkoutBtn">去结算</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireLogin()) throw new Error("redirect");
+    document.getElementById("topnav").innerHTML = renderTopnav("cart");
+
+    const listEl = document.getElementById("cartList");
+    const emptyEl = document.getElementById("empty");
+    const summaryEl = document.getElementById("summary");
+    const totalEl = document.getElementById("cartTotal");
+    const checkoutBtn = document.getElementById("checkoutBtn");
+
+    function renderCart(data) {
+      const items = data.items;
+      if (!items.length) {
+        emptyEl.style.display = "block";
+        summaryEl.style.display = "none";
+        listEl.innerHTML = "";
+        return;
+      }
+      emptyEl.style.display = "none";
+      summaryEl.style.display = "block";
+      totalEl.textContent = fmtMoney(data.total);
+
+      // 按店铺分组
+      const groups = [];
+      for (const it of items) {
+        let g = groups.find((x) => x.store_id === it.store_id);
+        if (!g) {
+          g = { store_id: it.store_id, store_name: it.store_name, items: [] };
+          groups.push(g);
+        }
+        g.items.push(it);
+      }
+
+      listEl.innerHTML = groups.map((g) => `
+        <div class="group">
+          <div class="group__head">
+            <div class="group__title">
+              <span class="store-badge"></span>${escapeHtml(g.store_name)}
+            </div>
+            <span class="text-xs muted">#${g.store_id}</span>
+          </div>
+          ${g.items.map((it) => `
+            <div class="line-item">
+              <div class="line-item__main">
+                <div class="line-item__name">${escapeHtml(it.name)}</div>
+                <div class="line-item__sub">商品 #${it.product_id}</div>
+              </div>
+              <div class="line-item__price">${fmtMoney(it.price)}</div>
+              <div class="line-item__qty">× ${it.quantity}</div>
+              <div class="line-item__total">${fmtMoney(it.subtotal)}</div>
+              <button class="btn btn-danger btn-sm" data-action="remove"
+                      data-store-id="${it.store_id}" data-product-id="${it.product_id}">移除</button>
+            </div>`).join("")}
+        </div>`).join("");
+    }
+
+    async function loadCart() {
+      try {
+        const data = await API.cartGet();
+        renderCart(data);
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    }
+
+    // 删除（事件委托）
+    listEl.addEventListener("click", async (e) => {
+      const btn = e.target.closest('[data-action="remove"]');
+      if (!btn) return;
+      btn.disabled = true;
+      try {
+        await API.cartRemove(Number(btn.dataset.storeId), Number(btn.dataset.productId));
+        toast("已移除");
+        loadCart();
+      } catch (err) {
+        toast(err.message, "error");
+        btn.disabled = false;
+      }
+    });
+
+    // 下单
+    checkoutBtn.addEventListener("click", async () => {
+      checkoutBtn.disabled = true;
+      checkoutBtn.innerHTML = '<span class="spinner"></span> 下单中…';
+      try {
+        const order = await API.createOrder();
+        toast(`下单成功，订单 #${order.order_id}，共 ${order.sub_orders.length} 个子订单`);
+        setTimeout(() => (location.href = "/orders.html"), 700);
+      } catch (err) {
+        toast(err.message, "error");
+        checkoutBtn.disabled = false;
+        checkoutBtn.textContent = "去结算";
+      }
+    });
+
+    loadCart();
+  </script>
+</body>
+</html>

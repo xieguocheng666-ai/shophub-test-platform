@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>订单 · My Shop</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="topnav"></div>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>我的订单</h1>
+      <p>父订单跨店铺，下单时拆成子订单分别履约。</p>
+    </div>
+
+    <div id="empty" class="empty" style="display: none;">
+      <div class="empty__icon">▤</div>
+      <div>还没有订单</div>
+    </div>
+
+    <div id="orderList"></div>
+    <div class="pager" id="pager"></div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireLogin()) throw new Error("redirect");
+    document.getElementById("topnav").innerHTML = renderTopnav("orders");
+
+    const listEl = document.getElementById("orderList");
+    const emptyEl = document.getElementById("empty");
+    const pagerEl = document.getElementById("pager");
+    const PAGE_SIZE = 10;
+    let curPage = 1;
+
+    function badge(status) {
+      return `<span class="badge ${status}"><span class="status-dot"></span>${STATUS_CN[status] || status}</span>`;
+    }
+
+    async function loadOrders(page = 1) {
+      try {
+        const data = await API.orders(page, PAGE_SIZE);
+        curPage = page;
+        if (!data.orders.length) {
+          emptyEl.style.display = "block";
+          listEl.innerHTML = "";
+          pagerEl.innerHTML = "";
+          return;
+        }
+        emptyEl.style.display = "none";
+        listEl.innerHTML = data.orders.map((o) => `
+          <div class="card mb-16">
+            <div class="flex items-center gap-16">
+              <div class="grow">
+                <div class="mono" style="font-weight: 700;">订单 #${o.order_id}</div>
+                <div class="text-xs muted mt-8">${badge(o.status)}</div>
+              </div>
+              <div class="mono" style="font-size: 20px; font-weight: 700; color: var(--amber);">${fmtMoney(o.total)}</div>
+              <button class="btn btn-ghost" data-action="view" data-order-id="${o.order_id}">查看详情</button>
+              ${o.status === "pending" ? `<button class="btn btn-amber" data-action="pay" data-order-id="${o.order_id}">去支付</button>` : ""}
+            </div>
+          </div>`).join("");
+        renderPager(data.total, data.page, data.page_size);
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    }
+
+    function renderPager(total, page, pageSize) {
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      if (pages <= 1) { pagerEl.innerHTML = ""; return; }
+      pagerEl.innerHTML = `
+        <button class="btn btn-ghost btn-sm" id="prevPage" ${page <= 1 ? "disabled" : ""}>上一页</button>
+        <span class="pager__info">第 ${page} / ${pages} 页</span>
+        <button class="btn btn-ghost btn-sm" id="nextPage" ${page >= pages ? "disabled" : ""}>下一页</button>`;
+      document.getElementById("prevPage").onclick = () => loadOrders(page - 1);
+      document.getElementById("nextPage").onclick = () => loadOrders(page + 1);
+    }
+
+    // ---------- 订单详情弹窗 ----------
+    function openDetail(orderId) {
+      const mask = document.createElement("div");
+      mask.className = "modal-mask";
+      mask.innerHTML = `
+        <div class="modal">
+          <div class="modal__head">
+            <h3>订单 #${orderId}</h3>
+            <button class="modal__close">✕</button>
+          </div>
+          <div class="modal__body"><div class="flex items-center gap-12"><span class="spinner"></span> 加载中…</div></div>
+        </div>`;
+      document.body.appendChild(mask);
+      mask.querySelector(".modal__close").onclick = () => mask.remove();
+      mask.addEventListener("click", (e) => { if (e.target === mask) mask.remove(); });
+
+      renderDetail(mask, orderId);
+    }
+
+    async function renderDetail(mask, orderId) {
+      const body = mask.querySelector(".modal__body");
+      try {
+        const d = await API.orderDetail(orderId);
+        body.innerHTML = detailHtml(d);
+        bindDetailActions(mask, d);
+      } catch (err) {
+        body.innerHTML = `<div class="text-sm" style="color: var(--danger);">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function detailHtml(d) {
+      const subRows = d.sub_orders.map((s) => `
+        <div class="group">
+          <div class="group__head">
+            <div class="group__title"><span class="store-badge"></span>${escapeHtml(s.store_name)}</div>
+            <div class="flex items-center gap-12">
+              ${badge(s.status)}
+              <span class="group__amount">${fmtMoney(s.total)}</span>
+            </div>
+          </div>
+          ${s.items.map((it) => `
+            <div class="line-item">
+              <div class="line-item__main">
+                <div class="line-item__name">${escapeHtml(it.name)}</div>
+                <div class="line-item__sub">商品 #${it.product_id}</div>
+              </div>
+              <div class="line-item__price">${fmtMoney(it.price)}</div>
+              <div class="line-item__qty">× ${it.quantity}</div>
+            </div>`).join("")}
+          ${s.status === "shipped"
+            ? `<div class="line-item" style="justify-content: flex-end;">
+                <button class="btn btn-primary btn-sm" data-action="confirm"
+                        data-sub-id="${s.sub_order_id}">确认收货</button>
+              </div>`
+            : ""}
+        </div>`).join("");
+
+      return `
+        <div class="flex items-center justify-between mb-16">
+          <div>
+            <div class="text-xs muted">父订单状态</div>
+            <div class="mt-8">${badge(d.status)}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs muted">订单总额</div>
+            <div class="mono" style="font-size: 22px; font-weight: 700; color: var(--amber);">${fmtMoney(d.total)}</div>
+          </div>
+        </div>
+        ${d.status === "pending"
+          ? `<button class="btn btn-amber btn-lg btn-block mb-16" data-action="pay-detail" data-order-id="${d.order_id}">立即支付 ${fmtMoney(d.total)}</button>`
+          : ""}
+        <div class="text-xs muted mb-16">共 ${d.sub_orders.length} 个子订单，按下单店铺拆单</div>
+        ${subRows}`;
+    }
+
+    function bindDetailActions(mask, d) {
+      mask.querySelectorAll('[data-action="pay-detail"]').forEach((btn) => {
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner"></span> 支付中…';
+          try {
+            await API.payOrder(d.order_id);
+            toast("支付成功");
+            await renderDetail(mask, d.order_id);
+            loadOrders(curPage);
+          } catch (err) {
+            toast(err.message, "error");
+            btn.disabled = false;
+            btn.textContent = "立即支付";
+          }
+        };
+      });
+      mask.querySelectorAll('[data-action="confirm"]').forEach((btn) => {
+        btn.onclick = async () => {
+          btn.disabled = true;
+          try {
+            await API.confirmSubOrder(Number(btn.dataset.subId));
+            toast("确认收货成功");
+            await renderDetail(mask, d.order_id);
+            loadOrders(curPage);
+          } catch (err) {
+            toast(err.message, "error");
+            btn.disabled = false;
+          }
+        };
+      });
+    }
+
+    // 列表操作：查看详情 / 去支付
+    listEl.addEventListener("click", async (e) => {
+      const viewBtn = e.target.closest('[data-action="view"]');
+      if (viewBtn) { openDetail(Number(viewBtn.dataset.orderId)); return; }
+
+      const payBtn = e.target.closest('[data-action="pay"]');
+      if (payBtn) {
+        payBtn.disabled = true;
+        try {
+          await API.payOrder(Number(payBtn.dataset.orderId));
+          toast("支付成功");
+          loadOrders(curPage);
+        } catch (err) {
+          toast(err.message, "error");
+          payBtn.disabled = false;
+        }
+      }
+    });
+
+    loadOrders();
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# 环境变量（含数据库密码、密钥等敏感信息）
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# pytest
+.pytest_cache/
+
+# Allure 报告
+reports/
+allure-results/

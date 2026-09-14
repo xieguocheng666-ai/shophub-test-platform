@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>首页 · My Shop</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="topnav"></div>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>全部商品</h1>
+      <p>同一件商品，不同店铺各自定价、各自备货。</p>
+    </div>
+
+    <!-- 搜索 + 结果计数 -->
+    <div class="flex items-center gap-12 mb-24">
+      <div class="topnav__search grow" style="max-width: 420px;">
+        <input id="searchInput" placeholder="搜索商品，如：键盘 / 耳机 / 鼠标" />
+      </div>
+      <span class="text-sm muted" id="resultCount"></span>
+    </div>
+
+    <div id="empty" class="empty" style="display: none;">
+      <div class="empty__icon">▦</div>
+      <div>没有找到相关商品</div>
+    </div>
+
+    <div id="productGrid" class="grid"></div>
+
+    <div class="pager" id="pager"></div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireLogin()) throw new Error("redirect");
+    document.getElementById("topnav").innerHTML = renderTopnav("index");
+
+    const grid = document.getElementById("productGrid");
+    const empty = document.getElementById("empty");
+    const countEl = document.getElementById("resultCount");
+    const pager = document.getElementById("pager");
+    const PAGE_SIZE = 12;
+
+    let curKeyword = "";
+    let curPage = 1;
+
+    function stockPct(stock) {
+      return Math.min(100, Math.max(0, stock));
+    }
+
+    function productCard(p) {
+      const low = p.stock < 10;
+      const pct = stockPct(p.stock);
+      return `
+        <div class="product-card">
+          <div class="product-card__store">
+            <span class="pin"></span>${escapeHtml(p.store_name)}
+          </div>
+          <div class="product-card__name">${escapeHtml(p.name)}</div>
+          <div class="product-card__meta">
+            <div class="product-card__price">${fmtMoney(p.price)}</div>
+            <div class="product-card__id">#${p.store_id}-${p.product_id}</div>
+          </div>
+          <div class="stock">
+            <div class="stock__label">
+              <span>库存</span>
+              <span class="stock__num ${low ? "low" : ""}">${p.stock} 件</span>
+            </div>
+            <div class="stock-gauge">
+              <div class="stock-gauge__fill ${low ? "low" : ""}" style="width: ${pct}%"></div>
+            </div>
+          </div>
+          <div class="product-card__foot">
+            <input class="product-card__qty" type="number" min="1" value="1" />
+            <button class="btn btn-primary grow" data-action="add"
+                    data-store-id="${p.store_id}" data-product-id="${p.product_id}">加入购物车</button>
+          </div>
+        </div>`;
+    }
+
+    async function loadProducts(keyword = "", page = 1) {
+      grid.innerHTML = '<div class="empty"><span class="spinner"></span></div>';
+      try {
+        const data = await API.products(keyword, page, PAGE_SIZE);
+        curKeyword = keyword;
+        curPage = page;
+        countEl.textContent = `共 ${data.total} 件在售商品`;
+        if (!data.items.length) {
+          grid.innerHTML = "";
+          empty.style.display = "block";
+        } else {
+          empty.style.display = "none";
+          grid.innerHTML = data.items.map(productCard).join("");
+        }
+        renderPager(data.total, data.page, data.page_size);
+      } catch (err) {
+        grid.innerHTML = "";
+        toast(err.message, "error");
+      }
+    }
+
+    function renderPager(total, page, pageSize) {
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      if (pages <= 1) { pager.innerHTML = ""; return; }
+      pager.innerHTML = `
+        <button class="btn btn-ghost btn-sm" id="prevPage" ${page <= 1 ? "disabled" : ""}>上一页</button>
+        <span class="pager__info">第 ${page} / ${pages} 页</span>
+        <button class="btn btn-ghost btn-sm" id="nextPage" ${page >= pages ? "disabled" : ""}>下一页</button>`;
+      document.getElementById("prevPage").onclick = () => loadProducts(curKeyword, page - 1);
+      document.getElementById("nextPage").onclick = () => loadProducts(curKeyword, page + 1);
+    }
+
+    // 加购（事件委托）
+    grid.addEventListener("click", async (e) => {
+      const btn = e.target.closest('[data-action="add"]');
+      if (!btn) return;
+      const card = btn.closest(".product-card");
+      const qty = parseInt(card.querySelector(".product-card__qty").value, 10) || 1;
+      btn.disabled = true;
+      try {
+        await API.cartAdd(Number(btn.dataset.storeId), Number(btn.dataset.productId), qty);
+        toast("已加入购物车");
+      } catch (err) {
+        toast(err.message, "error");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // 搜索
+    function doSearch() {
+      loadProducts(document.getElementById("searchInput").value.trim(), 1);
+    }
+    document.querySelector(".topnav__search input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSearch();
+    });
+
+    loadProducts();
+  </script>
+</body>
+</html>
