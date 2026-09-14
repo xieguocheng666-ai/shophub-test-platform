@@ -5,8 +5,9 @@ uvicorn[standard]>=0.29
 # 接口测试
 requests>=2.31
 
-# UI 测试（后续 UI 模块使用）
+# UI 测试
 playwright>=1.45
+pytest-playwright>=0.6
 
 # 测试框架与报告
 pytest>=8.0

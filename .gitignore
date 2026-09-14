@@ -12,3 +12,7 @@ __pycache__/
 # Allure 报告
 reports/
 allure-results/
+
+# Playwright 测试产物（失败截图 / trace）
+test-results/
+*.png
