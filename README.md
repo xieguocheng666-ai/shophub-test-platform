@@ -1,4 +1,4 @@
-# my-test-framework
+# ShopHub 商城测试平台
 
 一个**自写被测系统 + 接口/UI 双测**的电商测试框架，覆盖「登录 → 搜索 → 购物车 → 下单 → 支付 → 发货 → 确认收货」完整业务闭环。
 
@@ -55,7 +55,7 @@
 ## 目录结构
 
 ```
-my-test-framework/
+shophub-test-platform/
 ├── server/                 # 被测系统（FastAPI 电商后端）
 │   ├── main.py             # 接口层：认证/商品/购物车/订单/支付/故障注入
 │   ├── db.py               # 数据访问层：原生 SQL + 原子扣库存 + 订单状态机
