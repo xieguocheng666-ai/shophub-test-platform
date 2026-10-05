@@ -2,9 +2,7 @@
 import allure
 
 from api.common.assert_util import assert_ok, assert_status
-
-# 种子数据里的店铺 id（server/db.py SEED_STORES）
-STORE1, STORE2 = 1, 2
+from api.tests.constants import STORE1, STORE2
 
 
 # ---------- 越权矩阵（店铺维度） ----------

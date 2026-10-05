@@ -2,9 +2,7 @@
 import allure
 
 from api.common.assert_util import assert_ok
-
-# 种子数据里的店铺 id（server/db.py SEED_STORES）
-STORE1 = 1
+from api.tests.constants import STORE1
 
 
 @allure.feature("全链路")

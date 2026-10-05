@@ -1,0 +1,2 @@
+# 容器环境覆盖配置：TEST_ENV=docker 时加载，覆盖默认配置（base_url 指向 docker-compose 里的 SUT 服务名）。
+base_url: http://sut:8000

@@ -26,9 +26,11 @@ my-test-framework/
 ├── server/              # 被测系统：FastAPI 电商后端 + 静态页面
 │   ├── main.py          # 入口：认证/商品搜索/购物车/订单/支付（完整电商闭环）
 │   └── db.py            # 数据访问层：PyMySQL 原生 SQL + 原子扣库存 + 密码哈希
-├── config/config.yaml   # base_url + 测试账号（密钥已移 .env）
+├── config/              # 多环境配置（TEST_ENV 切换）
+│   ├── config.yaml      # 默认 dev 环境（base_url + 测试账号）
+│   └── config.docker.yaml  # 容器环境覆盖
 ├── .env                 # DB 连接 + SECRET_KEY（不进 git）
-├── data/                # 测试数据（yaml，参数化）
+├── data/                # 测试数据（yaml，参数化：users/search/cart）
 ├── api/
 │   ├── api_client.py    # ApiClient（聚合各业务 mixin 的统一入口）
 │   ├── clients/         # 接口封装，按业务模块拆分（mixin）
@@ -46,7 +48,8 @@ my-test-framework/
 │       ├── test_order.py
 │       ├── test_concurrency.py
 │       ├── test_store.py
-│       └── test_e2e.py
+│       ├── test_e2e.py
+│       └── constants.py    # 种子数据引用（STORE1/STORE2）
 ├── ui/
 │   ├── pages/           # POM 页面类（base_page.py + 业务页面）
 │   └── test_ui.py       # UI 测试用例

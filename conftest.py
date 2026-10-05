@@ -19,9 +19,16 @@ load_dotenv(ROOT_DIR / ".env")
 
 @pytest.fixture(scope="session")
 def config():
+    env = os.getenv("TEST_ENV", "dev")
     with open(ROOT_DIR / "config" / "config.yaml", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    # 环境覆盖文件：config.{env}.yaml（默认 dev 无需覆盖）
+    env_path = ROOT_DIR / "config" / f"config.{env}.yaml"
+    if env != "dev" and env_path.exists():
+        with open(env_path, encoding="utf-8") as f:
+            cfg.update(yaml.safe_load(f))
     cfg["secret_key"] = os.getenv("SECRET_KEY")  # 敏感信息从 .env 读，不进 yaml
+    cfg["env"] = env
     return cfg
 
 

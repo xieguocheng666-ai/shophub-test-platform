@@ -1,0 +1,22 @@
+# 购物车加购边界测试数据
+# 字段：store_id / product_id / quantity / expect_code
+insufficient_stock:
+  - id: 库存不足
+    store_id: 1
+    product_id: 4
+    quantity: 999
+    expect_code: 400
+
+invalid_quantity:
+  - id: 数量非法
+    store_id: 1
+    product_id: 1
+    quantity: 0
+    expect_code: 400
+
+nonexistent_product:
+  - id: 商品不存在
+    store_id: 1
+    product_id: 9999
+    quantity: 1
+    expect_code: 404

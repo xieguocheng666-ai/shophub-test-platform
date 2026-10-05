@@ -1,10 +1,29 @@
 """购物车测试：加购、查看、移除、边界校验、空购物车下单。"""
+from pathlib import Path
+
 import allure
+import pytest
+import yaml
 
 from api.common.assert_util import assert_status
+from api.tests.constants import STORE1
 
-# 种子数据里的店铺 id（server/db.py SEED_STORES）
-STORE1, STORE2 = 1, 2
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+def _load_cart_cases():
+    with open(ROOT_DIR / "data" / "cart.yaml", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    cases = []
+    for group, items in data.items():
+        for item in items:
+            cases.append(
+                pytest.param(
+                    item["store_id"], item["product_id"], item["quantity"], item["expect_code"],
+                    id=item["id"],
+                )
+            )
+    return cases
 
 
 @allure.feature("购物车")
@@ -24,28 +43,12 @@ def test_cart_add_get_remove(api_client, login_user):
 
 
 @allure.feature("购物车")
-@allure.story("库存不足被拒")
+@allure.story("加购边界校验")
 @allure.severity(allure.severity_level.NORMAL)
-def test_cart_add_insufficient_stock(api_client, login_user):
-    # 商品 4 库存 30，999 远超库存，必触发 400
-    resp = api_client.cart_add(STORE1, 4, 999)
-    assert_status(resp, 400)
-
-
-@allure.feature("购物车")
-@allure.story("数量非法被拒")
-@allure.severity(allure.severity_level.NORMAL)
-def test_cart_add_invalid_quantity(api_client, login_user):
-    resp = api_client.cart_add(STORE1, 1, 0)
-    assert_status(resp, 400)
-
-
-@allure.feature("购物车")
-@allure.story("商品不存在")
-@allure.severity(allure.severity_level.NORMAL)
-def test_cart_add_nonexistent_product(api_client, login_user):
-    resp = api_client.cart_add(STORE1, 9999, 1)
-    assert_status(resp, 404)
+@pytest.mark.parametrize("store_id,product_id,quantity,expect_code", _load_cart_cases())
+def test_cart_add_boundary(store_id, product_id, quantity, expect_code, api_client, login_user):
+    resp = api_client.cart_add(store_id, product_id, quantity)
+    assert_status(resp, expect_code)
 
 
 @allure.feature("购物车")

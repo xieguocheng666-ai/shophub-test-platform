@@ -1,3 +1,4 @@
+# 默认环境（dev）配置。可用环境变量 TEST_ENV 切换环境，如 TEST_ENV=docker 加载 config.docker.yaml 覆盖。
 base_url: http://127.0.0.1:8000
 
 # 测试账号，与 server/db.py 种子数据保持一致
