@@ -7,10 +7,12 @@
 """
 import os
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import jwt
+from anyio import to_thread
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -18,9 +20,20 @@ from pydantic import BaseModel
 
 from server import db
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-app = FastAPI(title="My Shop API", version="0.5.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # 压测环境：调大 anyio 默认线程池上限（默认 40），避免同步 handler 高并发下排队/拒绝连接。
+    # 生产可配 THREADPOOL_SIZE；默认 100（低于 MySQL max_connections=151，留余量）。
+    to_thread.current_default_thread_limiter().total_tokens = int(
+        os.getenv("THREADPOOL_SIZE", "100")
+    )
+    yield
+
+
+app = FastAPI(title="My Shop API", version="0.5.0", lifespan=lifespan)
 
 # ---------- 配置 ----------
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me-not-for-prod")

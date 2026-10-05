@@ -11,6 +11,7 @@ import os
 import secrets
 
 import pymysql
+from dbutils.pooled_db import PooledDB
 from fastapi import HTTPException
 from pymysql.cursors import DictCursor
 
@@ -126,16 +127,41 @@ DDL = [
 
 
 # ---------- 连接 ----------
+_POOL = None
+
+
+def _get_pool():
+    """惰性初始化连接池（进程级单例）。多 worker 下每个进程各自持有一个池。
+
+    reset=True：连接归还时自动回滚未提交事务，保证借出的是干净连接；
+    autocommit=False：保持原 PyMySQL 默认，代码里用 conn.begin()/commit() 管理事务；
+    ping=1：借出前探测连接有效性，失效则重建。
+    """
+    global _POOL
+    if _POOL is None:
+        _POOL = PooledDB(
+            creator=pymysql,
+            maxconnections=150,
+            mincached=10,
+            maxcached=150,
+            blocking=True,
+            ping=1,
+            reset=True,
+            autocommit=False,
+            host=os.getenv("DB_HOST", "127.0.0.1"),
+            port=int(os.getenv("DB_PORT", "3306")),
+            user=os.getenv("DB_USER", "root"),
+            password=os.getenv("DB_PASSWORD", ""),
+            database=os.getenv("DB_NAME", "shop"),
+            charset="utf8mb4",
+            cursorclass=DictCursor,
+        )
+    return _POOL
+
+
 def get_conn():
-    return pymysql.connect(
-        host=os.getenv("DB_HOST", "127.0.0.1"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "shop"),
-        charset="utf8mb4",
-        cursorclass=DictCursor,
-    )
+    """从连接池借一个连接；调用方 finally 里 conn.close() 会归还到池（非真正关闭）。"""
+    return _get_pool().connection()
 
 
 # ---------- 密码哈希（加盐 + PBKDF2，标准库 hashlib 实现） ----------
