@@ -30,8 +30,23 @@ my-test-framework/
 ├── .env                 # DB 连接 + SECRET_KEY（不进 git）
 ├── data/                # 测试数据（yaml，参数化）
 ├── api/
-│   ├── api_client.py    # requests + Session + 重试封装
-│   └── test_api.py      # 接口测试用例
+│   ├── api_client.py    # ApiClient（聚合各业务 mixin 的统一入口）
+│   ├── clients/         # 接口封装，按业务模块拆分（mixin）
+│   │   ├── auth.py      # 登录/健康/当前用户
+│   │   ├── product.py   # 商品/搜索
+│   │   ├── cart.py      # 购物车
+│   │   ├── order.py     # 订单/支付/发货/确认
+│   │   ├── store.py     # 店铺管理
+│   │   └── debug.py     # 故障注入/重置/关单
+│   ├── common/          # 统一断言等公共能力
+│   │   └── assert_util.py
+│   └── tests/           # 接口测试用例（按业务模块拆分）
+│       ├── test_auth.py
+│       ├── test_cart.py
+│       ├── test_order.py
+│       ├── test_concurrency.py
+│       ├── test_store.py
+│       └── test_e2e.py
 ├── ui/
 │   ├── pages/           # POM 页面类（base_page.py + 业务页面）
 │   └── test_ui.py       # UI 测试用例

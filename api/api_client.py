@@ -1,17 +1,26 @@
-"""ApiClient：对 requests 的封装，接口测试的统一入口。
+"""ApiClient：接口测试的统一入口，按业务模块拆成 mixin 组合而成。
 
-核心对象：requests.Session。ApiClient 内部持有它，并维护登录后的 JWT，
+核心对象：requests.Session。ApiClient 持有它并维护登录后的 JWT，
 受保护接口自动带上 Authorization: Bearer <token>。
+业务方法按模块拆分在 api/clients/ 下（auth/product/cart/order/store/debug），
+ApiClient 通过多重继承聚合它们，测试里仍用统一的 api_client.xxx() 调用。
 """
 import logging
 import time
-import allure
+
 import requests
+
+from api.clients.auth import AuthMixin
+from api.clients.cart import CartMixin
+from api.clients.debug import DebugMixin
+from api.clients.order import OrderMixin
+from api.clients.product import ProductMixin
+from api.clients.store import StoreMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ApiClient:
+class ApiClient(AuthMixin, ProductMixin, CartMixin, OrderMixin, StoreMixin, DebugMixin):
     """被测系统的统一 HTTP 客户端。
 
     base_url: 被测系统地址（从 config/config.yaml 读入，不写死）
@@ -44,83 +53,3 @@ class ApiClient:
         if self.token:
             return {"Authorization": f"Bearer {self.token}"}
         return {}
-
-    # ---------- 业务方法 ----------
-    def login(self, username: str, password: str):
-        resp = self._request(
-            "POST", "/login", json={"username": username, "password": password}
-        )
-        if resp.status_code == 200:
-            self.token = resp.json()["token"]
-        return resp
-
-    def health(self):
-        return self._request("GET", "/health")
-
-    def me(self):
-        return self._request("GET", "/me", headers=self._headers())
-
-    def products(self, keyword: str = ""):
-        return self._request("GET", "/products", params={"keyword": keyword})
-
-    def store_product(self, store_id: int, product_id: int):
-        return self._request("GET", f"/stores/{store_id}/products/{product_id}")
-
-    def cart_add(self, store_id: int, product_id: int, quantity: int = 1):
-        return self._request(
-            "POST", "/cart", headers=self._headers(),
-            json={"store_id": store_id, "product_id": product_id, "quantity": quantity},
-        )
-
-    def cart_get(self):
-        return self._request("GET", "/cart", headers=self._headers())
-
-    def cart_remove(self, store_id: int, product_id: int):
-        return self._request("DELETE", f"/cart/{store_id}/{product_id}", headers=self._headers())
-
-    @allure.step("创建订单")
-    def order_create(self):
-        return self._request("POST", "/order", headers=self._headers())
-
-    @allure.step("支付订单")
-    def order_pay(self, order_id: int):
-        return self._request("POST", f"/order/{order_id}/pay", headers=self._headers())
-
-    def sub_order_ship(self, sub_order_id: int):
-        return self._request("POST", f"/sub-orders/{sub_order_id}/ship", headers=self._headers())
-
-    def sub_order_confirm(self, sub_order_id: int):
-        return self._request("POST", f"/sub-orders/{sub_order_id}/confirm", headers=self._headers())
-
-    def orders(self):
-        return self._request("GET", "/orders", headers=self._headers())
-
-    # ---------- 店铺管理（seller） ----------
-    def create_store(self, store_name: str):
-        return self._request(
-            "POST", "/stores", headers=self._headers(), json={"store_name": store_name}
-        )
-
-    def list_my_stores(self):
-        return self._request("GET", "/stores", headers=self._headers())
-
-    def add_product(self, store_id: int, name: str, price: float, stock: int):
-        return self._request(
-            "POST", f"/stores/{store_id}/products", headers=self._headers(),
-            json={"name": name, "price": price, "stock": stock},
-        )
-
-    def update_stock(self, store_id: int, product_id: int, stock: int):
-        return self._request(
-            "PATCH", f"/stores/{store_id}/products/{product_id}/stock",
-            headers=self._headers(), json={"stock": stock},
-        )
-
-    def set_payment_mode(self, mode: str):
-        return self._request("POST", "/debug/payment-mode", json={"mode": mode})
-
-    def cancel_expired(self, seconds: int = 0):
-        return self._request("POST", f"/debug/cancel-expired?seconds={seconds}")
-
-    def reset(self):
-        return self._request("POST", "/debug/reset")
