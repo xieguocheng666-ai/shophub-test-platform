@@ -1,148 +1,131 @@
-# my-test-framework 开发指导
+# my-test-framework（ShopHub 商城测试平台）
 
-> 秋招测开核心项目：电商核心链路（登录→搜索→购物车→下单）接口 + UI 双覆盖测试框架。
-> 被测系统为自写本地 FastAPI 电商，接口（requests）与 UI（Playwright/POM）双测，上 GitHub + CI 绿灯。
+> 给 Claude 的快速上手文档：读完这份即可了解项目全貌、怎么跑、关键设计，不必逐文件探索。
+> 秋招测开核心项目。**核心产物是测试框架**，被测系统是自写的 FastAPI 电商后端。
 
-## 一、项目定位
+## 一、项目是什么
 
-- **用途**：简历项目 + 模拟面试深挖素材。面试官能追到第三四层，所以每个模块必须能讲透。
-- **被测系统（SUT）**：自写 FastAPI 电商后端（`server/`），内存存储，接口/UI 都测它。
-- **为什么自写**：数据可控、接口和 UI 都能测、能讲系统架构。
+自写一套 FastAPI 电商后端（SUT，`server/`），再用「接口 + UI + 性能」三层测试框架测它，Docker 容器化 + GitHub Actions CI。
 
-## 二、技术栈
+- **被测系统 SUT**：模拟真实电商后端，完整业务闭环（登录 JWT → 搜索 → 加购 → 下单 → 支付 → 发货 → 确认收货），数据存 MySQL。
+- **接口测试 `api/`**：pytest + requests，yaml 数据驱动。
+- **UI 测试 `ui/`**：Playwright + POM。
+- **性能测试 `perf/`**：Locust。
+- 面试定位：每个模块能追到第三四层（为什么这么做 / 边界怎么处理）。
+
+## 二、技术栈（以代码为准）
 
 | 层 | 技术 |
 |----|------|
-| 被测系统 | Python + FastAPI + uvicorn + MySQL 8.0（PyMySQL 数据访问层） |
-| 接口测试 | pytest + requests + yaml 数据驱动 |
-| UI 测试 | Playwright + POM（base_page 基类） |
-| 报告 | Allure |
-| CI | GitHub Actions（.github/workflows/test.yml） |
+| 被测系统 SUT | FastAPI + uvicorn + MySQL 8.0（PyMySQL + DBUtils 连接池）+ JWT(PyJWT) + Celery + Redis |
+| 接口测试 | pytest + requests + PyYAML 数据驱动 + allure-pytest |
+| UI 测试 | Playwright + pytest-playwright + POM |
+| 性能测试 | Locust |
+| 配置 | PyYAML + python-dotenv（`.env` 存敏感信息） |
+| 工程化 | Docker + docker-compose + GitHub Actions |
 
 ## 三、目录结构
 
 ```text
 my-test-framework/
-├── server/              # 被测系统：FastAPI 电商后端 + 静态页面
-│   ├── main.py          # 入口：认证/商品搜索/购物车/订单/支付（完整电商闭环）
-│   └── db.py            # 数据访问层：PyMySQL 原生 SQL + 原子扣库存 + 密码哈希
-├── config/              # 多环境配置（TEST_ENV 切换）
-│   ├── config.yaml      # 默认 dev 环境（base_url + 测试账号）
-│   └── config.docker.yaml  # 容器环境覆盖
-├── .env                 # DB 连接 + SECRET_KEY（不进 git）
-├── data/                # 测试数据（yaml，参数化：users/search/cart）
-├── api/
-│   ├── api_client.py    # ApiClient（聚合各业务 mixin 的统一入口）
-│   ├── clients/         # 接口封装，按业务模块拆分（mixin）
-│   │   ├── auth.py      # 登录/健康/当前用户
-│   │   ├── product.py   # 商品/搜索
-│   │   ├── cart.py      # 购物车
-│   │   ├── order.py     # 订单/支付/发货/确认
-│   │   ├── store.py     # 店铺管理
-│   │   └── debug.py     # 故障注入/重置/关单
-│   ├── common/          # 统一断言等公共能力
-│   │   └── assert_util.py
-│   └── tests/           # 接口测试用例（按业务模块拆分）
-│       ├── test_auth.py
-│       ├── test_cart.py
-│       ├── test_order.py
-│       ├── test_concurrency.py
-│       ├── test_store.py
-│       ├── test_e2e.py
-│       └── constants.py    # 种子数据引用（STORE1/STORE2）
-├── ui/
-│   ├── pages/           # POM 页面类（base_page.py + 业务页面）
-│   └── test_ui.py       # UI 测试用例
-├── docs/                # 文档（定位见「十、文档管理」）
-│   ├── teaching-progress.md   # 教学进度真相
-│   └── knowledge/       # 知识点沉淀（NN-主题.md）
-├── utils/logger.py      # 日志配置
-├── reports/             # Allure 报告输出
-├── .github/workflows/test.yml
-├── conftest.py          # 全局 fixture
-├── pytest.ini
-└── requirements.txt
+├── server/                  # 被测系统 SUT：FastAPI 电商后端
+│   ├── main.py              # 全部路由：认证/商品/购物车/订单/支付/发货/确认/店铺/故障注入
+│   ├── db.py                # 数据访问层：连接池 + 所有 SQL + 种子数据 + 原子扣库存 + 幂等关单
+│   ├── celery_app.py        # Celery 应用 + beat 周期任务（超时未支付自动关单）
+│   ├── tasks.py             # Celery 任务（薄封装 db 层，避免两套实现漂移）
+│   └── static/              # 前端页面（原生 HTML+JS，js/api.js 用 fetch 调后端）
+├── api/                     # 接口测试
+│   ├── api_client.py        # ApiClient：requests.Session + JWT，聚合 6 个 mixin
+│   ├── clients/             # 业务接口封装：auth/product/cart/order/store/debug（mixin）
+│   ├── common/assert_util.py
+│   └── tests/               # 接口用例：auth/cart/order/store/e2e/concurrency
+├── ui/                      # UI 测试
+│   ├── pages/               # POM：base_page + login/index/cart/orders/seller
+│   └── test_ui.py
+├── perf/                    # 性能测试
+│   ├── locustfile.py        # Locust：login/search/order 三场景（order 分 hot/spread）
+│   └── results/             # 压测结果 CSV + 图表
+├── config/                  # 多环境配置（config.yaml 默认 + config.docker.yaml）
+├── data/                    # yaml 数据驱动（users/search/cart，参数化用例）
+├── docs/                    # 文档（database-structure.md）
+├── conftest.py              # 全局 fixture（config/base_url/api_client/reset_data/login_user/payment_mode）
+├── docker-compose.yml       # 5 服务：db + redis + sut + worker + test
+├── Dockerfile               # SUT 镜像（启动时先 init_db 再起 uvicorn）
+├── Dockerfile.test          # 测试运行器镜像（含 Playwright Chromium）
+├── .github/workflows/ci.yml
+├── requirements.txt
+├── pytest.ini               # testpaths=api ui；addopts 含 playwright 截图/trace
+└── .env / .env.example
 ```
 
-## 四、里程碑（计划 vs 实际）
+## 四、核心架构
 
-| 阶段 | 时间 | 内容 | 状态 |
-|------|------|------|------|
-| 骨架 | 8/12 | 目录 + conftest + data + requirements + pytest.ini | ✅ 8/12 |
-| API 模块 | 8/13 | api_client + test_api + 数据驱动 | ✅ 8/13（6 passed） |
-| SUT 完整搭建 | 8/14 | 电商 10 接口 + 3 前端页面（登录/首页/购物车） | ✅ 8/14 |
-| 0 · SUT 核心改造 | 8/14-17 | JWT 鉴权 + 订单状态机 + 模拟支付网关 + 并发库存 + 越权校验 | ✅ 8/14 |
-| 1 · 接口测试深化 | 8/18-24 | 全链路接口测试 + 数据驱动 + Allure + 并发竞态 | 🔜 |
-| 2 · UI 模块 | 8/25-31 | base_page + 页面对象 + UI 全链路 + 失败截图/trace | 🔜 |
-| 3 · CI + 收尾 | 9/1-7 | GitHub Actions + README（背景→方案→效果）+ 模拟面试 | 🔜 |
-| 4 · 容器化 + 异步调度 | 投递后迭代 | Docker 容器跑测试（环境隔离）+ Celery/Redis 异步调度 | ⬜ |
-| 简历 + 投递 | 9 月中 | 简历 v1（STAR 法则）+ 秋招投递 | 🔜 |
+### 4.1 被测系统（SUT）业务模型
 
-> 8/18 完工线取消，投递顺延至 9 月秋招高峰；项目作为秋招期间持续迭代的核心作品。
->
-> 实际进度以 `D:\学习计划与进度\progress-tracker.md`（开发）+ `docs/teaching-progress.md`（教学）为准，本表仅作规划参考。
+**平台模式**：一个商家可开多店，商品是 SPU（`products` 只有名字），价格/库存下放到店铺维度（`store_product`）。
 
-## 五、协作分工（ownership 留用户）
+- 表：`users`（buyer/seller）→ `stores` → `store_product`（价格库存在这）→ `carts` / `orders`（父订单）+ `sub_orders`（子订单，按店铺拆）+ `order_items`（明细）。
+- 订单状态机：`pending → paid → shipped → completed`（父订单），子订单同机 + `canceled`。
+- 种子账号：`alice`/`bob`（buyer）、`seller1`/`seller2`（seller），密码见 `config/config.yaml`。
 
-- **我来做**：搭框架、写主体代码、逐行讲解表。
-- **用户亲手做**（面试深挖不露馅的关键）：
-  1. 被测系统选型拍板（已定：本地 FastAPI）
-  2. 加测试用例（≥3 个）
-  3. 改 bug + 加小功能（我留坑给用户修）
-  4. GitHub 部署 + CI 配通 + README"效果"部分
-  5. 模拟面试（我当面试官追问）
-- **不替用户拍板决策**；每个关键模块配逐行讲解表；明确列出预留的亲手环节。
+### 4.2 测试框架三层
 
-## 六、开发规则
+- **接口测试**：`conftest.py` 提供 fixture —— `config`(session，读 yaml+env)、`base_url`(session)、`api_client`(function，独立 Session+token)、`reset_data`(autouse，每测试前清库重播种子)、`login_user`、`payment_mode`。业务接口封装成 `ApiClient` 的 mixin，测试里 `api_client.xxx()` 调用。数据驱动用 `data/*.yaml` + `pytest.mark.parametrize`。
+- **UI 测试**：`BasePage` 封装 goto/fill/click/get_text，业务页继承并声明 `URL_PATH` + 元素选择器（优先 id/data-* 属性）。`page` fixture 每测试独立 context。
+- **性能测试**：`locustfile.py` 三场景（login/search/order），`SCENARIO`/`ORDER_MODE` 环境变量切换；`ORDER_MODE=hot` 抢同一商品测行锁竞争上限，`spread` 分散测吞吐。
 
-1. 每个关键代码模块配"代码 | 逐行解释"表，不"给了代码自己悟"。
-2. 抽象概念用 ASCII 图结构化（架构、数据流、组件关系）。
-3. 先讲"为什么需要"再给方案；先点旧工具局限，再引新概念。
-4. 首次出现的英文术语带音标（如 fixture /ˈfɪkstʃər/）。
-5. 多选项场景给"什么场景选什么"对照表（如 logger 级别、断言方式）。
-6. 示例代码贴近工程：不写死值、配置分离、命名真实（不用 foo/bar）。
-7. 每个新模块先交代"核心操作哪个对象、怎么拿"再教用法。
-8. 概念节奏：每节只引入 1-2 个新概念，不一次性倾泻。
-9. 渐进式标准：评估进度/代码用"当前阶段目标"当尺子，不用最终行业标准要求当前阶段；接受随阶段推进逐步达到行业标准（如并发边界留到阶段3 讲、测试盲区留到 Task 4/5 补）。
+## 五、怎么跑
 
-## 七、如何运行
+### 本地（首次需先建库）
 
 ```bash
-# 启动被测系统（终端 1）—— 必须带 DEBUG_MODE=1，否则 /debug/* 故障注入路由不注册，测试会因 reset 失败全挂
+# 0. 首次准备：建库建表 + 插种子（幂等，可重复执行）
+.venv/Scripts/python -c "from server.db import init_db; init_db()"
+
+# 1. 终端1 起 SUT —— 必须 DEBUG_MODE=1，否则 /debug/* 故障注入路由不注册，测试 reset 失败全挂
 DEBUG_MODE=1 .venv/Scripts/python -m uvicorn server.main:app --reload
 
-# 健康检查
-curl http://127.0.0.1:8000/health
-
-# 跑测试（终端 2）
+# 2. 终端2 跑测试（testpaths=api ui，不含 perf）
 .venv/Scripts/python -m pytest
 
-# Allure 报告
-.venv/Scripts/python -m pytest --alluredir=reports
-allure serve reports
+# 3. Allure 报告
+.venv/Scripts/python -m pytest --alluredir=reports && allure serve reports
 ```
 
-## 八、进度
+### Docker / CI
 
-- 开发进度 → `D:\学习计划与进度\progress-tracker.md`
-- 教学进度 → `docs/teaching-progress.md`
+```bash
+docker compose up --build   # db+redis+sut+worker+test 一起起，test 跑完退出
+```
 
-## 九、交流偏好
+CI（`.github/workflows/ci.yml`）：push/PR 到 main/master 触发 → `docker compose build` → `docker compose up --exit-code-from test` → 失败时上传 Playwright 产物。
 
-- 对话用简体中文；本项目代码注释用中文（用户边学边看，注释即讲解）。
-- 心理健康优先于进度：不催、不施压，状态差先处理状态。
+## 六、关键设计点（面试抓手）
 
-## 十、文档管理（2026-09-02 确立）
+| 设计点 | 实现 | 位置 |
+|--------|------|------|
+| 防超卖 | 扣库存用**原子条件 UPDATE**（`SET stock=stock-qty WHERE ... AND stock>=qty`），InnoDB 行锁 + `rowcount==0` 判库存不足 + 事务回滚。**不是线程锁**（阶段0旧实现已废弃） | `db.py:create_order` |
+| 拆单 | 下单按店铺拆父订单 + 子订单 + 明细，因发货是店铺维度 | `db.py:create_order` |
+| JWT + 密码哈希 | 登录发 JWT（HS256/30min），密码 PBKDF2 加盐哈希（10w 次迭代） | `main.py` / `db.py` |
+| 支付故障注入 | `PAYMENT_MODE` 切 success/fail/timeout，DEBUG 下 `/debug/payment-mode` 切换 | `main.py` |
+| 超时关单幂等 | Celery beat 周期扫 pending 超时订单，取消 + 回补库存；用「条件 UPDATE WHERE status='pending'」抢占实现幂等（重复关单不回补） | `db.py:_cancel_order_in_tx` + `celery_app.py` |
+| 越权防护 | 水平（`_check_store_owner` 店铺 owner / `get_order` 订单 username）+ 垂直（`_require_seller` 角色） | `main.py` / `db.py` |
+| 连接池 | DBUtils `PooledDB`，每操作独立借还（FastAPI 同步 handler 丢线程池跑，共享连接有线程安全问题） | `db.py:_get_pool` |
+| 写偏斜防护 | `confirm_sub_order` 用 `FOR UPDATE` 锁父订单行，串行化并发确认 | `db.py:confirm_sub_order` |
 
-> 通用原则（文档四类 / 单一事实来源 / 更新契机）见全局 CLAUDE.md「文档管理规则」。本节只列本项目文档地图。
+## 七、坑 / 注意事项
 
-### 文档地图（打开项目先读这列）
+1. **`DEBUG_MODE=1` 必须带**：否则 `/debug/reset`、`/debug/payment-mode`、`/debug/cancel-expired` 不注册，`reset_data` autouse fixture 会因 reset 失败导致全部测试挂掉。
+2. **端口冲突**：宿主机 3306 被本地 MySQL 占用，`docker-compose.yml` 把容器 MySQL 映射到 `3307:3306`。
+3. **压测账号不在种子数据**：`locustfile.py` 用 `perfuser0..999`（密码 `perf123`），压测前需预造这些账号。
+4. **敏感信息**：DB 密码、`SECRET_KEY` 在 `.env`（不进 git），`config.yaml` 不再存密钥。
 
-| 文档 | 定位 | 什么时候读 |
-|------|------|-----------|
-| `docs/teaching-progress.md` | **教学进度唯一真相**（task/概念级） | 想知道"教到哪了" |
-| `D:\学习计划与进度\progress-tracker.md` | **整体学习进度唯一真相**（阶段级） | 想知道"整体到哪了" |
-| `docs/database-structure.md` | 数据库结构参考手册 | 讲数据结构/表/数据流 |
-| `docs/knowledge/NN-*.md` | 已讲知识点的沉淀（写后只读） | 复习某概念 |
-| `docs/superpowers/` | 阶段0 设计+实施计划（历史快照，已过时） | 复盘阶段0 当时怎么设计 |
-| `docs/mysql-role-refactor.md` | 8-31 MySQL 化变更记录（已完成） | 复盘 MySQL 化决策 |
+## 八、文档与进度
+
+- 数据库结构参考：`docs/database-structure.md`（表结构 + 实例数据 + 下单数据流）。
+- **开发进度** → `D:\秋招追踪\进度追踪.md`；**教学/面试准备进度** → `D:\秋招追踪\shophub-onboarding.md`（Map→Walk→Probe→Master 四级）。
+
+## 九、协作原则
+
+- 关键决策与动手环节留给用户（面试深挖不露馅），我负责搭框架、讲解、模拟面试追问。
+- 对话用简体中文；心理健康优先于进度，不催不施压。

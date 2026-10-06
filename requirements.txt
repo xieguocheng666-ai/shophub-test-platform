@@ -19,6 +19,7 @@ python-dotenv>=1.0
 
 # 数据库
 PyMySQL>=1.1
+DBUtils>=3.0
 
 # JWT 鉴权
 PyJWT>=2.8
@@ -26,3 +27,6 @@ PyJWT>=2.8
 # 异步任务（超时未支付自动关单）
 celery>=5.3
 redis>=5.0
+
+# 性能测试
+locust>=2.20

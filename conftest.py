@@ -37,7 +37,7 @@ def base_url(config):
     # 容器内跑测试时用环境变量 BASE_URL 指向被测系统（如 http://sut:8000），
     # 本地跑则回退到 config.yaml 的 base_url。
     return os.getenv("BASE_URL", config["base_url"])
-
+ 
 
 @pytest.fixture()
 def api_client(base_url):
