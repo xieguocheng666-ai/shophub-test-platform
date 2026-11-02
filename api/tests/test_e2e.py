@@ -2,13 +2,14 @@
 import allure
 
 from api.common.assert_util import assert_ok
+from api.common.db_util import assert_db_value
 from api.tests.constants import STORE1
 
 
 @allure.feature("全链路")
 @allure.story("搜索→加购→下单→支付→发货→收货")
 @allure.severity(allure.severity_level.CRITICAL)
-def test_full_ecommerce_flow(api_client, login_user, config):
+def test_full_ecommerce_flow(api_client, login_user, config, db):
     seller1 = config["users"]["seller1"]
     alice = config["users"]["alice"]
 
@@ -43,11 +44,35 @@ def test_full_ecommerce_flow(api_client, login_user, config):
         api_client.login(alice["username"], alice["password"])
         assert api_client.sub_order_confirm(sub_order_id).json()["status"] == "completed"
 
+    with allure.step("直连数据库确认整条链路的数据都已落库"):
+        assert_db_value(
+            db, "SELECT status FROM orders WHERE order_id=%s",
+            "completed", (order_id,), "父订单最终状态",
+        )
+        assert_db_value(
+            db,
+            "SELECT COUNT(*) AS n FROM sub_orders WHERE parent_order_id=%s AND status<>'completed'",
+            0, (order_id,), "所有子订单应已完成",
+        )
+        item = db.one(
+            "SELECT oi.product_id, oi.quantity, oi.name FROM order_items oi "
+            "JOIN sub_orders so ON oi.sub_order_id=so.sub_order_id "
+            "WHERE so.parent_order_id=%s",
+            (order_id,),
+        )
+        assert item["product_id"] == target["product_id"]
+        assert item["quantity"] == 1
+        assert item["name"], "明细应保存商品名快照"
+        assert_db_value(
+            db, "SELECT COUNT(*) AS n FROM carts WHERE username=%s",
+            0, (alice["username"],), "下单后购物车应清空",
+        )
+
 
 @allure.feature("异步任务")
 @allure.story("超时未支付订单自动取消")
 @allure.severity(allure.severity_level.CRITICAL)
-def test_cancel_expired_orders(api_client, login_user):
+def test_cancel_expired_orders(api_client, login_user, db):
     with allure.step("记录商品初始库存"):
         store_id, product_id = STORE1, 2
         stock_before = api_client.store_product(store_id, product_id).json()["stock"]
@@ -61,3 +86,11 @@ def test_cancel_expired_orders(api_client, login_user):
     with allure.step("断言订单已取消、库存已回补"):
         assert api_client.orders().json()["orders"][-1]["status"] == "canceled"
         assert api_client.store_product(store_id, product_id).json()["stock"] == stock_before
+        assert_db_value(
+            db, "SELECT status FROM orders WHERE order_id=%s",
+            "canceled", (order_id,), "超时关单后父订单状态",
+        )
+        assert_db_value(
+            db, "SELECT stock FROM store_product WHERE store_id=%s AND product_id=%s",
+            stock_before, (store_id, product_id), "超时关单后库存回补",
+        )

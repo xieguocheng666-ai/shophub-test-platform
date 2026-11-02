@@ -5,13 +5,14 @@ import allure
 import requests
 
 from api.common.assert_util import assert_status
+from api.common.db_util import assert_db_value
 from api.tests.constants import STORE1, STORE2
 
 
 @allure.feature("并发防超卖")
 @allure.story("三号商品防超卖测试")
 @allure.severity(allure.severity_level.CRITICAL)
-def test_concurrent_order_no_oversell(base_url, config):
+def test_concurrent_order_no_oversell(base_url, config, db):
     with allure.step("bob 登录并查询商品 3 库存"):
         bob = config["users"]["bob"]
         login_resp = requests.post(
@@ -43,12 +44,22 @@ def test_concurrent_order_no_oversell(base_url, config):
         ).json()["stock"]
         assert success <= stock
         assert final_stock >= 0
+        sold = db.scalar(
+            "SELECT COALESCE(SUM(oi.quantity), 0) AS n FROM order_items oi "
+            "JOIN sub_orders so ON oi.sub_order_id=so.sub_order_id "
+            "WHERE so.store_id=%s AND oi.product_id=%s",
+            (store_id, product_id),
+        )
+        assert sold == stock - final_stock, (
+            f"落库的购买数量 {sold} 应等于库存减少量 {stock - final_stock}"
+        )
+        assert sold <= stock, "落库的购买数量不应超过初始库存"
 
 
 @allure.feature("并发防超卖")
 @allure.story("四号商品防超卖测试")
 @allure.severity(allure.severity_level.CRITICAL)
-def test_concurrent_order_no_oversell_another(base_url, config):
+def test_concurrent_order_no_oversell_another(base_url, config, db):
     with allure.step("bob 登录并查询商品 4 库存"):
         bob = config["users"]["bob"]
         login_resp = requests.post(
@@ -80,12 +91,22 @@ def test_concurrent_order_no_oversell_another(base_url, config):
         ).json()["stock"]
         assert success <= stock
         assert final_stock >= 0
+        sold = db.scalar(
+            "SELECT COALESCE(SUM(oi.quantity), 0) AS n FROM order_items oi "
+            "JOIN sub_orders so ON oi.sub_order_id=so.sub_order_id "
+            "WHERE so.store_id=%s AND oi.product_id=%s",
+            (store_id, product_id),
+        )
+        assert sold == stock - final_stock, (
+            f"落库的购买数量 {sold} 应等于库存减少量 {stock - final_stock}"
+        )
+        assert sold <= stock, "落库的购买数量不应超过初始库存"
 
 
 @allure.feature("并发确认收货")
 @allure.story("并发确认两个子订单，父订单正确流转为 completed")
 @allure.severity(allure.severity_level.CRITICAL)
-def test_concurrent_confirm_parent_completed(base_url, config):
+def test_concurrent_confirm_parent_completed(base_url, config, db):
     alice = config["users"]["alice"]
     seller1 = config["users"]["seller1"]
     seller2 = config["users"]["seller2"]
@@ -134,3 +155,12 @@ def test_concurrent_confirm_parent_completed(base_url, config):
         assert all(code == 200 for code in results)
         detail = requests.get(f"{base_url}/order/{order_id}", headers=alice_headers).json()
         assert detail["status"] == "completed"
+        assert_db_value(
+            db, "SELECT status FROM orders WHERE order_id=%s",
+            "completed", (order_id,), "并发确认后父订单状态",
+        )
+        assert_db_value(
+            db,
+            "SELECT COUNT(*) AS n FROM sub_orders WHERE parent_order_id=%s AND status<>'completed'",
+            0, (order_id,), "两个子订单都应完成",
+        )

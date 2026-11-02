@@ -6,11 +6,13 @@ api_client/login_user/payment_mode 用 function 级（每个测试独立，避�
 import os
 from pathlib import Path
 
+import pymysql
 import pytest
 import yaml
 from dotenv import load_dotenv
 
 from api.api_client import ApiClient
+from api.common import db_util
 
 ROOT_DIR = Path(__file__).resolve().parent
 
@@ -50,6 +52,17 @@ def reset_data(api_client):
     """每个测试前重置被测系统数据，保证测试隔离（库存/购物车/订单/支付模式）。"""
     resp = api_client.reset()
     assert resp.status_code == 200, resp.text
+
+
+@pytest.fixture()
+def db():
+    """直连被测库的只读校验句柄；本地无 MySQL 时跳过依赖它的用例。"""
+    try:
+        conn = db_util.connect()
+    except pymysql.err.OperationalError as exc:
+        pytest.skip(f"数据库不可达，跳过 DB 校验：{exc}")
+    yield db_util.DB(conn)
+    conn.close()
 
 
 @pytest.fixture()

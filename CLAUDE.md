@@ -123,6 +123,7 @@ CI（`.github/workflows/ci.yml`）：push/PR 到 main/master 触发 → `docker 
 ## 八、文档与进度
 
 - 数据库结构参考：`docs/database-structure.md`（表结构 + 实例数据 + 下单数据流）。
+- 接口用例说明：`docs/test-cases.md`（每条用例测什么/前置/操作/校验，含数据库断言说明）。
 - **开发进度** → `D:\秋招追踪\进度追踪.md`；**教学/面试准备进度** → `D:\秋招追踪\shophub-onboarding.md`（Map→Walk→Probe→Master 四级）。
 
 ## 九、协作原则
