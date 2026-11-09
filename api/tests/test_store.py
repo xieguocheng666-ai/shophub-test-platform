@@ -1,6 +1,6 @@
 """店铺越权矩阵 + 拆单与库存隔离测试。"""
 import allure
-import pytest
+from decimal import Decimal
 
 from api.common.assert_util import assert_error, assert_ok
 from api.common.db_util import assert_db_value
@@ -91,6 +91,10 @@ def test_seller_cannot_ship_others_sub_order(api_client, config, db):
 @allure.story("跨店铺下单拆成多个子订单")
 @allure.severity(allure.severity_level.CRITICAL)
 def test_order_split_by_store(api_client, login_user, db):
+    price1 = db.scalar("SELECT price FROM store_product WHERE store_id=%s AND product_id=1", (STORE1,))
+    price5 = db.scalar("SELECT price FROM store_product WHERE store_id=%s AND product_id=5", (STORE2,))
+    expected_by_store = {STORE1: price1, STORE2: price5}
+    expected_total = price1 + price5
     stock1_before = db.scalar(
         "SELECT stock FROM store_product WHERE store_id=%s AND product_id=1", (STORE1,)
     )
@@ -111,6 +115,10 @@ def test_order_split_by_store(api_client, login_user, db):
         assert {so["store_id"] for so in sub_orders} == {STORE1, STORE2}
     with allure.step("断言父订单总额 = 子订单之和"):
         assert data["total"] == sum(so["total"] for so in sub_orders)
+        assert Decimal(str(data["total"])) == expected_total
+        assert {so["store_id"]: Decimal(str(so["total"])) for so in sub_orders} == expected_by_store
+        assert db.scalar("SELECT total FROM orders WHERE order_id=%s", (order_id,)) == expected_total
+        assert {r["store_id"]: r["total"] for r in db.all("SELECT store_id, total FROM sub_orders WHERE parent_order_id=%s", (order_id,))} == expected_by_store
 
     with allure.step("直连数据库确认拆单结构正确落库"):
         rows = db.all(
@@ -134,7 +142,7 @@ def test_order_split_by_store(api_client, login_user, db):
             "WHERE so.parent_order_id=%s",
             (order_id,),
         )
-        assert float(item_total) == pytest.approx(data["total"], abs=0.01), (
+        assert item_total == expected_total, (
             "父订单总额应等于明细金额之和"
         )
         assert_db_value(

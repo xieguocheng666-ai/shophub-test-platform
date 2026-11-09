@@ -25,7 +25,7 @@ class ApiClient(AuthMixin, ProductMixin, CartMixin, OrderMixin, StoreMixin, Debu
 
     base_url: 被测系统地址（从 config/config.yaml 读入，不写死）
     timeout:  单次请求超时秒数，防止测试卡死
-    retry:    网络层失败时重试次数（仅网络异常才重试，业务 4xx/5xx 不重试）
+    retry:    GET/HEAD 连接异常或超时的额外重试次数；写请求不自动重放，HTTP 错误不重试
     """
 
     def __init__(self, base_url: str, timeout: int = 5, retry: int = 2):
@@ -38,13 +38,14 @@ class ApiClient(AuthMixin, ProductMixin, CartMixin, OrderMixin, StoreMixin, Debu
     def _request(self, method: str, path: str, **kwargs):
         url = f"{self.base_url}{path}"
         kwargs.setdefault("timeout", self.timeout)
-        for attempt in range(self.retry + 1):
+        retries = self.retry if method.upper() in {"GET", "HEAD"} else 0
+        for attempt in range(retries + 1):
             try:
                 resp = self.session.request(method, url, **kwargs)
                 logger.info("[%s] %s -> %s", method.upper(), url, resp.status_code)
                 return resp
-            except requests.RequestException as exc:
-                if attempt == self.retry:
+            except (requests.ConnectionError, requests.Timeout) as exc:
+                if attempt == retries:
                     raise
                 logger.warning("请求失败，第 %d 次重试: %s", attempt + 1, exc)
                 time.sleep(1)

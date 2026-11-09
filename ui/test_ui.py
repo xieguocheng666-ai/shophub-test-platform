@@ -3,6 +3,8 @@
 每个测试独立（function 级 page fixture，自动新 context），
 后端数据由 conftest 的 reset_data autouse fixture 在每个测试前重置。
 """
+from decimal import Decimal
+
 from playwright.sync_api import expect
 
 from ui.pages.cart_page import CartPage
@@ -27,7 +29,7 @@ def test_search_keyboard(page, base_url):
     expect(page.locator(".product-card").first).to_contain_text("键盘")
 
 
-def test_add_to_cart_and_checkout(page, base_url):
+def test_add_to_cart_and_checkout(page, base_url, db):
     """全链路：登录 → 加购 → 购物车 → 下单 → 跳订单页。"""
     LoginPage(page, base_url).goto().login("alice", "alice123")
     expect(page).to_have_url(f"{base_url}/index.html")
@@ -38,10 +40,22 @@ def test_add_to_cart_and_checkout(page, base_url):
     # 进购物车，确认商品在，然后结算下单
     page.goto(f"{base_url}/cart.html")
     expect(page.locator(CartPage.LIST)).to_contain_text("罗技 K845 机械键盘")
+    expect(page.locator(".line-item__qty")).to_have_text("× 2")
+    expect(page.locator(CartPage.TOTAL)).to_have_text("¥598.00")
     CartPage(page, base_url).checkout()
 
     # 下单成功 → 跳转订单页
     expect(page).to_have_url(f"{base_url}/orders.html")
+    orders = db.all("SELECT order_id, status, total FROM orders WHERE username=%s", ("alice",))
+    assert len(orders) == 1
+    assert orders[0]["status"] == "pending"
+    assert orders[0]["total"] == Decimal("598.00")
+    assert db.all(
+        "SELECT oi.product_id, oi.quantity, oi.price FROM order_items oi "
+        "JOIN sub_orders so ON so.sub_order_id=oi.sub_order_id WHERE so.parent_order_id=%s",
+        (orders[0]["order_id"],),
+    ) == [{"product_id": 2, "quantity": 2, "price": Decimal("299.00")}]
+    assert db.scalar("SELECT COUNT(*) FROM carts WHERE username=%s", ("alice",)) == 0
 
 
 def test_seller_login_redirects_to_seller(page, base_url):

@@ -1,147 +1,95 @@
-# 接口测试用例说明（ShopHub）
+# ShopHub 接口用例设计说明
 
-> 这份文档用“人话”说明 `api/tests/` 下每个用例：**测什么、前置条件、怎么操作、校验了什么**。
-> 面向第一次接触这个项目的人，不需要先读代码。
-> UI 用例见 `ui/test_ui.py`，性能场景见 `perf/`，不在本文范围。
+这里说明真实自动化用例为什么存在、怎么准备、检查什么。面试学习稿在 `D:/同余信科面试准备/07-核心链路用例设计与口述.md`。
 
-## 〇、先认识几个词
+## 业务范围与规则
 
-| 词 | 人话解释 |
-|---|---|
-| 被测系统（SUT） | 我们写的那个假商城后端，测试就是拿它开刀 |
-| 状态码 | HTTP 响应里的数字，200 成功、400 请求有问题、401 没登录、403 没权限、404 找不到 |
-| detail | 出错时响应体里的错误说明，比如 `{"detail": "库存不足"}` |
-| 越权 | 没权限的人去操作别人的东西。**垂直越权** = 买家干卖家的事；**水平越权** = 用户 A 动用户 B 的数据 |
-| 幂等 | 同一个操作执行多次，效果和执行一次一样。比如“关单”跑两遍，库存只回补一次 |
-| 拆单 | 一次结算买了两个店铺的东西，系统拆成两个子订单，各自发货 |
-| 落库 | 数据真的写进了数据库，而不只是接口返回成功 |
+模拟商城：买家加购、下单、模拟支付，所属商家发子订单，买家确认收货。
+一次购买跨店铺时按店铺拆子订单。下单扣库存，加购不扣库存；模拟支付成功不再扣库存；失败取消订单并回补库存。
+父订单完成要求所有子订单完成。当前发货只更新子订单，父订单不会在发货时变为 shipped。
+支付没有真实账户扣款，不测真实银行支付或清结算。
 
-## 一、每个用例开始前都会做什么
+## 用例从哪里来
 
-`conftest.py` 里有一个自动执行的 `reset_data`，**每条用例跑之前**都会：
+业务规则 → 出错风险 → 测试方法 → 前置、操作、预期 → 响应和数据库断言。
+例如「购买数量不能超过库存」对应数量输入分类、临界数量、累计加购、下单前库存变化和多个买家竞争。
+正常链路不是覆盖率指标；不能用全部用例通过证明没有缺陷。
 
-1. 调用被测系统的 `/debug/reset`；
-2. 把用户、店铺、商品、购物车、订单等表清空，重新插入固定种子数据；
-3. 把支付模式恢复为 `success`。
+## 运行前提与隔离
 
-所以每条用例都从同一份干净数据出发，互不影响。种子数据固定为：
+- 被测服务需开启 DEBUG_MODE=1，便于重置、切换模拟支付模式和触发关单。
+- 每条测试前清表并重播种子，须用专用测试库，禁止指向生产数据。
+- 这些用例目前按顺序运行；不同测试不能并行共享同一库，否则重置会干扰其他测试。用例内部并发与用例之间并行是两回事。
+- 每条用例独立客户端；并发抢购的两个买家使用各自账号、购物车和会话，先完成准备再同时下单，关闭客户端重试。
+- 数据库是数据验收必需依赖，连接失败报告准备错误，不以跳过掩盖缺少校验。
+- 测试与被测服务必须连接同一专用库。Docker test 显式使用 DB_HOST=db 和相同库名。
 
-- 买家：`alice` / `alice123`，`bob` / `bob123`
-- 卖家：`seller1` / `seller123`（店铺 1），`seller2` / `seller456`（店铺 2）
-- 商品 1~8，分布见 `docs/database-structure.md`
+## 用例分布（参数展开后67条接口，另18条单元和5条UI）
 
-**通用启动前提**：被测系统必须以 `DEBUG_MODE=1` 启动，否则 `/debug/*` 路由不存在，重置会失败。
+| 文件 | 数量 | 关注点 |
+|---|---:|---|
+| api/tests/test_auth.py | 14 | 服务、登录、搜索、身份令牌有效性、密码存储 |
+| api/tests/test_cart.py | 13 | 加购/删除、非法值、数量上下边界、累计加购、空购物车 |
+| api/tests/test_order.py | 9 | 购买全流程、权限、状态、支付失败/超时、重复关单 |
+| api/tests/test_order_integrity.py | 10 | 下单回滚、重复支付、非法状态操作、部分收货、跨店失败 |
+| api/tests/test_store.py | 7 | 店铺权限、拆单、独立金额、跨店库存隔离 |
+| api/tests/test_concurrency.py | 3 | 两个商品的最后一件竞争、同时收货 |
+| api/tests/test_e2e.py | 2 | 搜索到收货的链路衔接、直接触发关单 |
+| api/tests/test_quality_regressions.py | 9 | 输入边界、库存原值更新、用户隔离、他人收货拒绝、超时筛选 |
+| unit/test_quality_regressions.py | 18 | 写请求不重放、读请求重试上限、模型校验、库存原值与不存在区分 |
 
-## 二、断言分四层，不是只看状态码
+UI另有5条；下单除跳转外，检查页面数量2、金额598及数据库订单明细。unit通过本目录fixture覆盖根目录reset_data，不连接服务或数据库。默认pytest已包含unit。
 
-| 层 | 断什么 | 例子 |
+## 核心设计矩阵
+
+| 业务风险 | 方法和具体输入 | 前置与动作 | 必须验证 | 代码入口 |
+|---|---|---|---|---|
+| 正常购买算错钱或重复扣库存 | 正常链路；键盘 2 件 | 下单前查店铺商品价和库存，独立算预期，再走支付、发货、收货 | 价×量的独立金额；父子单及明细；下单扣 2、支付不再扣；购物车清空；最终完成 | test_order_full_flow |
+| 非法数量或未知商品 | 输入分类；-1、0、远超库存、未知编号 | 干净购物车发起加购 | 拒绝及具体原因；没有购物车残留；全部店铺库存不变 | test_cart_add_boundary |
+| 数量临界点判断错误 | 边界值；1、99、100、101 | 键盘库存 100，合法数量加购后下单 | 加购不扣库存；99/100 下单后库存 1/0；101 拒绝；DB 数量正确 | test_quantity_stock_boundary |
+| 只检查单次数量 | 累计边界；60+39/40/41 | 先加购 60，再追加 | 最终为 99/100，追加 41 拒绝后仍保留 60；库存不变 | test_cart_accumulated_quantity |
+| 空车生成空单 | 异常输入 | 空购物车下单 | 无父子单、无明细，全部库存不变 | test_order_empty_cart_rejected |
+| 加购后库存已变 | 状态变化 | 加购 2，商家将该商品库存改到 1，再下单 | 拒绝；购物车、库存和所有订单表逐行不变 | test_order_stock_changed_rolls_back[single-product] |
+| 多商品仅撤销部分扣减 | 原子性，即一次下单全部成功或全部撤销 | 加购商品 2、3，让后扣库存的商品 3 不足，再下单 | 前一个商品的扣减也必须撤销；无半成品订单；购物车保留 | test_order_stock_changed_rolls_back[rollback-earlier-product] |
+| 已支付再支付 | 重复操作 | 成功支付后再请求支付 | 明确拒绝，订单、明细、库存、购物车都不变 | test_paid_order_repay_has_no_side_effect |
+| 非法状态操作写入脏数据 | 状态迁移；pending发货、pending/paid收货、重复发货/收货 | 构造合法前置状态，使用正确角色触发不允许操作 | 状态码和原因、请求前后完整数据快照相等 | test_invalid_order_actions_preserve_data |
+| 一家收货导致整单提前完成 | 多子单组合 | 跨店下单支付、两家发货，先后收货 | 第一次只完成一个子单，父单必须仍为paid；第二次父单完成 | test_parent_completes_only_after_all_suborders |
+| 支付失败漏回补某店库存 | 跨店组合、小数金额、重复操作 | 店铺1键盘1件，店铺2 U盘2件、线1件，模拟支付失败 | 独立金额398.70；两子单均取消；所有库存恢复；明细保留；再次支付不改变数据 | test_cross_store_failure_preserves_amount_and_items |
+| 拆单归属或金额错误 | 跨店组合 | 店铺1商品1、店铺2商品5各1件 | 两子单按店铺归属，父单/子单/明细都与下单前独立预期匹配；分别扣库存 | test_order_split_by_store |
+| 同商品跨店库存串扰 | 数据隔离 | 仅购买店铺1商品1 | 店铺1减1，店铺2同商品不变 | test_same_product_multi_store_stock_isolation |
+| 越权 | 角色×资源归属组合 | 买家发货、改他人订单、商家操作他人店铺 | 明确拒绝且目标状态或库存保持不变 | test_order.py / test_store.py 对应越权用例 |
+| 并发超卖或零成交假通过 | 两个独立买家抢1件 | 商家调库存为1，两买家先各加购1，屏障同步下单 | 精确1成功1库存不足；库存0；只有1父单1子单1件明细；失败方购物车保留，成功方清空 | test_concurrent_order_no_oversell |
+| 并发收货遗漏父单更新 | 两子单同时操作 | 两子单已发货，独立会话屏障同步确认 | 两个请求成功、两子单完成、父单完成 | test_concurrent_confirm_parent_completed |
+| 重复关单重复回补 | 幂等，即重复执行效果不叠加 | 待支付订单连续关单两次 | 首次1条、第二次0条，库存正好恢复，父子单取消 | test_cancel_expired_idempotent |
+
+## 为什么这些断言更可信
+
+1. 下单前用店铺价格和购买数量独立计算金额，不仅检查父子表彼此相等。
+2. 金额用 Decimal 精确小数比较，不允许一分钱误差被容差吞掉。
+3. 数据库查询不复用被测服务的数据访问函数。按本次订单号识别订单，避免列表排序影响结果。
+4. 失败场景比较请求前后的库存、父单、子单、明细、购物车，既测拒绝也测无副作用。
+5. 并发断言既限制不能超卖，也要求合法请求确实成交，不能全失败仍通过。
+
+## 验证方式与边界
+
+常规验证：`.venv/Scripts/python.exe -m pytest api ui -q -o addopts=`，先设置专用 DB_NAME 与 BASE_URL。
+关键用例还做临时内存故障注入：让父子订单及明细一起多算单价、失败下单额外扣库存，检查测试能失败，然后关闭故障服务并对原始业务重新回归。
+故障注入用于验证测试敏感度，不是发现了真实生产缺陷，不计入真实缺陷经历。
+
+目前尚未覆盖：完整非法状态矩阵、所有接口的权限矩阵、支付与关单同时竞争、真正 Celery 调度与消息交付、真实支付对账、所有类型/字段校验。并发屏障增加请求重叠机会，不保证穷尽服务端所有交错；两人竞争验证正确性，不表示性能容量。
+2026-11-09修复了输入非负有限校验及库存同值更新误报不存在，另修复客户端写请求重放。真实Celery调度、支付与关单同时竞争仍未验证；完整结果见 `quality-review-2026-11-09.md`。
+
+参考：[ISTQB黑盒测试技术](https://astqb.org/4-2-black-box-test-techniques/)、[pytest参数化](https://docs.pytest.org/en/stable/how-to/parametrize.html)、[pytest跳过含义](https://docs.pytest.org/en/stable/how-to/skipping.html)。要求 DB 不可达时报错，是本项目把数据库验收视为必需环节的选择，不是 pytest 禁止跳过数据库测试。
+
+## 2026-11-09补充矩阵
+
+| 风险 | 场景与预期 | 用例 |
 |---|---|---|
-| 1. HTTP 状态码 | 请求成功/失败的大方向 | 200、400、403 |
-| 2. 响应体 | 成功看业务字段，失败看 `detail` 原因 | `status == "paid"`、`detail` 含“库存不足” |
-| 3. 接口回读 | 换个接口再查一遍 | 下单后再查商品详情看库存 |
-| 4. 直连数据库 | 数据是否真的落库、有没有副作用 | 查 `orders.status`、`store_product.stock` |
+| 响应丢失导致重复写 | 写请求只发送一次并抛超时；GET/HEAD网络失败才有界重试 | unit/test_quality_regressions.py |
+| 负价格或负库存入库 | 上架/改库存返回422，业务数据无变化；零值保留 | test_product_negative_values_rejected_without_writes / test_stock_negative_value_rejected_without_writes / test_zero_price_and_stock_are_accepted |
+| 未改变库存被误报不存在 | 对存在商品重复写原值成功，不存在商品返回404 | test_stock_same_value_update_succeeds / test_stock_missing_product_rejected |
+| 购物车串用户 | 两用户分别增查删，互不影响，库存不变 | test_cart_isolated_between_users |
+| 确认他人收货 | 正确前置已发货，由另一买家确认拒绝，五类数据不变 | test_confirm_other_buyers_shipped_order_has_no_side_effect |
+| 超时筛选或已支付保护错 | 已超时pending取消、未超时pending保留、已超时paid保留；只回补一件，重复取消为0 | test_cancel_expired_only_cancels_old_pending |
 
-第 4 层用 `api/common/db_util.py` 直连 MySQL，**故意不复用被测代码的 `server/db.py`**。
-原因：如果读写都走被测代码，写错了、读也以同样方式错，接口一来自查会“自洽地”通过；直连库才是独立信源。
-
-数据库不可达时，用到第 4 层的用例会自动 skip（跳过），不会假失败。
-
----
-
-## 三、基础与鉴权（`test_auth.py`，14 条）
-
-| 用例 | 测什么（人话） | 前置条件 | 怎么操作 | 校验了什么 |
-|---|---|---|---|---|
-| `test_health` | 服务活着吗 | SUT 已启动 | GET `/health` | 200，响应体恰好是 `{"status": "ok"}` |
-| `test_login` / 合法登录 | 正确账号能登录 | 无 | POST `/login`，alice/alice123 | 200，返回非空 `token` |
-| `test_login` / 密码错误 | 密码错不能登录 | 无 | POST `/login`，alice/wrong-pass | 401，`detail` 含“用户名或密码错误” |
-| `test_login` / 用户不存在 | 不存在的账号不能登录 | 无 | POST `/login`，nobody/whatever | 401，`detail` 含“用户名或密码错误” |
-| `test_search_products` / 匹配多个 | 关键词能搜到多个商品 | 无 | GET `/products?keyword=罗技` | 返回 4 条，且每条商品名都含“罗技” |
-| `test_search_products` / 匹配单个 | 关键词只命中一个 | 无 | keyword=索尼 | 返回 1 条 |
-| `test_search_products` / 空关键词 | 不传关键词返回全部 | 无 | keyword 为空 | 返回 10 条（种子商品数） |
-| `test_search_products` / 无结果 | 搜不到时返回空列表 | 无 | keyword=巧乐兹 | 返回 0 条 |
-| `test_me_without_token` | 没带 token 不能访问个人信息 | 无 | GET `/me`，不带 Authorization | 401，`detail` 含“缺少 token” |
-| `test_me_with_forged_token` | 瞎编的 token 不能用 | 无 | GET `/me`，Bearer `forged.token` | 401，`detail` 含“token 无效” |
-| `test_me_with_wrong_signature` | 签名不对的 token 不能用 | 无 | 用错误密钥自签一个 JWT 再访问 `/me` | 401，`detail` 含“token 无效” |
-| `test_me_with_expired_token` | 过期 token 不能用 | 无 | 用正确密钥签一个已过期 JWT 再访问 `/me` | 401，`detail` 含“token 已过期” |
-| `test_me_with_valid_token` | 合法 token 能拿到自己的信息 | 已登录 alice | GET `/me`，带登录拿到的 token | 200，`username=alice`，`nickname=爱丽丝` |
-| `test_password_stored_hashed` | 密码不是明文存库 | 数据库可访问 | 直接查 `users` 表 alice 的 `password` | 不等于 `alice123`；格式为“盐:哈希”（32 位 + 64 位 hex）；全表无明文密码 |
-
-> 为什么登录失败用例只认“用户名或密码错误”：SUT 出于安全考虑，不区分“用户不存在”和“密码错”，避免暴露账号是否存在。测试按实际契约断言。
-
-## 四、购物车（`test_cart.py`，5 条）
-
-| 用例 | 测什么（人话） | 前置条件 | 怎么操作 | 校验了什么 |
-|---|---|---|---|---|
-| `test_cart_add_get_remove` | 加购、查看、移除能正常走通 | 已登录 alice | 加购店铺 1 商品 1 共 2 件 → GET `/cart` → DELETE `/cart/1/1` | 加购后接口返回 1 条且数量 2，**数据库 `carts` 行数量为 2**；移除后接口为空，**数据库该行真被删除（0 行）** |
-| `test_cart_add_boundary` / 库存不足 | 买超过库存要被拒 | 已登录 alice | 加购店铺 1 商品 4 共 999 件（库存 30） | 400，`detail` 含“库存不足”；**数据库购物车仍为 0 行** |
-| `test_cart_add_boundary` / 数量非法 | 数量 0 要被拒 | 已登录 alice | 加购 0 件 | 400，`detail` 含“数量必须大于 0”；**数据库购物车仍为 0 行** |
-| `test_cart_add_boundary` / 商品不存在 | 不存在的商品不能加购 | 已登录 alice | 加购店铺 1 商品 9999 | 404，`detail` 含“商品不存在”；**数据库购物车仍为 0 行** |
-| `test_order_empty_cart_rejected` | 空购物车不能下单 | 已登录 alice，购物车为空 | POST `/order` | 400，`detail` 含“购物车为空”；**数据库没有生成任何订单** |
-
-> 失败用例最容易漏的是“副作用”：返回 400 只说明被拒了，还要证明**没有留下脏数据**，所以都补了数据库断言。
-
-## 五、订单与支付（`test_order.py`，9 条）
-
-| 用例 | 测什么（人话） | 前置条件 | 怎么操作 | 校验了什么 |
-|---|---|---|---|---|
-| `test_order_full_flow` | 一单从下单到收货的完整状态流转 | 已登录 alice | 加购店铺 1 商品 2 共 1 件 → 下单 → 支付 → seller1 发货 → alice 确认收货 | 下单 `pending`、支付 `paid`、发货 `shipped`、收货 `completed`；**数据库父订单 `completed`、没有未完成子订单、明细数量合计 1** |
-| `test_illegal_transition_rejected` | 待支付订单不能直接确认收货 | 已登录 alice | 加购下单后，不支付直接 POST 确认收货 | 400，`detail` 含“不允许从 pending 变为 completed”；**数据库子订单仍是 `pending`** |
-| `test_cannot_operate_others_order` | 不能支付别人的订单（水平越权） | alice 先下单，再用 bob 登录 | bob 调用 alice 订单的支付接口 | 404，`detail` 含“订单不存在”；**数据库该订单仍是 `pending`，没被支付** |
-| `test_buyer_cannot_ship` | 买家不能发货（垂直越权） | alice 已下单，仍是买家身份 | alice 调用发货接口 | 403，`detail` 含“需要商家权限”；**数据库子订单仍是 `pending`** |
-| `test_pay_fail_cancels_and_restores_stock` | 支付失败要取消订单并把库存加回来 | 已登录 alice，支付模式设为 fail | 记录库存 → 加购店铺 2 商品 5 共 2 件 → 下单 → 支付 | 支付返回 `failed`；订单列表最新一条 `canceled`；库存回到下单前；**数据库父订单 `canceled`、库存已回补、失败订单的明细仍保留（数量合计 2）** |
-| `test_pay_fail_then_repay_rejected` | 已取消的订单不能再支付 | 已登录 alice | fail 模式下下单并支付（订单被取消）→ 切回 success 再支付一次 | 400，`detail` 含“订单状态不允许支付”；**数据库订单仍 `canceled`、库存没有被二次回补** |
-| `test_pay_timeout_triggers_retry` | 支付网关超时时客户端要感知、订单不能乱动 | 支付模式设为 timeout | 用 1 秒超时的客户端加购下单并支付 | 客户端抛出 `requests.Timeout`；**数据库订单仍 `pending`，库存保持已扣减（下单扣了 1 件，超时不回补）** |
-| `test_pay_fail_restores_all_products_stock` | 一单买多个商品，支付失败要全部回补 | 已登录 alice，支付模式 fail | 记录商品 5、6 库存 → 加购 5×2、6×1 → 下单 → 支付 | 支付 `failed`；接口查两商品库存都回到原值；**数据库两行库存都已回补** |
-| `test_cancel_expired_idempotent` | 超时关单重复触发只生效一次 | 已登录 alice | 加购商品 2 共 2 件 → 下单 → 连续调用两次“取消超时订单” | 第一次返回 `cancelled=1`，第二次 `cancelled=0`；**数据库库存正好回补一次、订单 `canceled`、1 个子订单同步取消** |
-
-> 幂等测试是这个项目最值钱的用例之一：关单逻辑如果重复执行，库存会被越补越多。接口返回 `cancelled=0` 只是表象，数据库里的库存数字才是铁证。
-
-## 六、店铺越权、拆单与库存隔离（`test_store.py`，7 条）
-
-| 用例 | 测什么（人话） | 前置条件 | 怎么操作 | 校验了什么 |
-|---|---|---|---|---|
-| `test_buyer_cannot_create_store` | 买家不能开店（垂直越权） | 已登录 alice（buyer） | POST `/stores` 开店“alice 的小店” | 403，`detail` 含“需要商家权限”；**数据库 `stores` 数量没变** |
-| `test_buyer_cannot_add_product` | 买家不能上架商品（垂直越权） | 已登录 alice | POST 给店铺 1 上架“新商品” | 403，`detail` 含“需要商家权限”；**数据库 `products` 和 `store_product` 行数都没变** |
-| `test_seller_cannot_operate_others_store` | 卖家不能改别人店铺的库存（水平越权） | seller1 已登录 | PATCH 把 seller2 店铺 2 商品 1 的库存改成 100 | 403，`detail` 含“无权操作他人店铺”；**数据库该商品库存没变** |
-| `test_seller_cannot_ship_others_sub_order` | 卖家不能发别人店铺的子订单（水平越权） | alice 已下单并支付，seller2 已登录 | POST 让 seller2 发店铺 1 的子订单 | 403，`detail` 含“无权操作他人店铺”；**数据库子订单仍是 `paid`，没被发货** |
-| `test_order_split_by_store` | 跨店下单要按店铺拆单，金额对得上 | 已登录 alice | 同时加购店铺 1 商品 1、店铺 2 商品 5 → 下单 | 接口返回 2 个子订单、店铺为 {1,2}、父总额=子单之和；**数据库：2 行子订单；明细分别挂到正确店铺的子订单（1,1,1）和（2,5,1）；父总额=明细金额之和；购物车清空；两店库存各 -1** |
-| `test_same_product_multi_store_stock_isolation` | 同一商品在不同店铺的库存互不影响 | 已登录 alice | 记录两店商品 1 库存 → 从店铺 1 买 1 件 | 店铺 1 库存 -1，店铺 2 库存不变（接口 + **数据库双重确认**） |
-| `test_cross_store_pay_fail_restores_all` | 跨店订单支付失败，两家店的库存都要回补 | 已登录 alice，支付模式 fail | 加购店铺 1 商品 1、店铺 2 商品 5 → 下单 → 支付 | 两店库存都回原值；**数据库父订单 `canceled`、两店库存都回补** |
-
-> 拆单用例的数据库断言重点不是“接口返回了几条”，而是**明细有没有挂错子订单**、**父订单总额和明细金额是否一致**。这类错误接口层可能算得“看起来对”，但落库结构是错的。
-
-## 七、端到端（`test_e2e.py`，2 条）
-
-| 用例 | 测什么（人话） | 前置条件 | 怎么操作 | 校验了什么 |
-|---|---|---|---|---|
-| `test_full_ecommerce_flow` | 从搜索到收货的整条业务链 | 已登录 alice | 搜“罗技” → 取第一条加购 → 查看购物车 → 下单 → 支付 → seller1 发货 → alice 收货 | 每一步接口成功；**数据库最终父订单 `completed`、所有子订单完成、明细保存了商品名快照和数量、购物车清空** |
-| `test_cancel_expired_orders` | 超时未支付订单会被自动取消并回补库存 | 已登录 alice | 记录库存 → 加购店铺 1 商品 2 → 下单（不支付）→ 调 `/debug/cancel-expired?seconds=0` | 返回 `cancelled=1`；订单列表最新一条 `canceled`；库存回原值；**数据库订单 `canceled`、库存已回补** |
-
-## 八、并发（`test_concurrency.py`，3 条）
-
-| 用例 | 测什么（人话） | 前置条件 | 怎么操作 | 校验了什么 |
-|---|---|---|---|---|
-| `test_concurrent_order_no_oversell` | 20 个线程抢商品 3，不能超卖 | bob 已登录，商品 3 有初始库存 | 记录初始库存 → 20 线程并发“加购 + 下单”，总请求数=库存+30 | 成功下单数 ≤ 初始库存；最终库存 ≥ 0；**数据库明细里的购买总量 = 初始库存 − 最终库存，且不超过初始库存** |
-| `test_concurrent_order_no_oversell_another` | 换商品 4 再验一次防超卖 | bob 已登录 | 同上，商品 4 | 同上 |
-| `test_concurrent_confirm_parent_completed` | 两个子订单同时确认收货，父订单要正确完成 | alice 跨店下单并支付，两店都已发货 | 两个线程同时确认两个子订单 | 两个请求都 200；接口查父订单 `completed`；**数据库父订单 `completed`、没有未完成子订单** |
-
-> 防超卖的数据库断言逻辑：每卖出 1 件，`order_items` 就多 1 条数量记录，同时 `store_product.stock` 少 1。如果两者对不上，说明有“扣了库存但没生成订单”或“生成了订单但没扣库存”的漏洞，光看接口返回是发现不了的。
-
----
-
-## 九、怎么跑
-
-```bash
-# 1. 起被测系统（必须带 DEBUG_MODE=1）
-DEBUG_MODE=1 .venv/Scripts/python -m uvicorn server.main:app --reload
-
-# 2. 跑全部接口用例
-.venv/Scripts/python -m pytest api -v
-
-# 3. 生成 Allure 报告
-.venv/Scripts/python -m pytest api --alluredir=reports && allure serve reports
-```
-
-数据库连接信息从 `.env` 的 `DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME` 读取；
-Docker 环境里 `DB_HOST=db` 由 `docker-compose.yml` 注入。
+输入校验的422来自框架请求体校验；这与业务规则失败的400是不同层次。0元是否允许是产品规则问题，本轮保留原本允许的零值，只拒绝负数与非有限值，不擅自新增正价格要求。

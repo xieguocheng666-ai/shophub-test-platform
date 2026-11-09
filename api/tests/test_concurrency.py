@@ -1,166 +1,101 @@
-"""并发测试：并发下单防超卖、并发确认收货父订单状态流转。"""
+"""独立买家竞争最后一件库存；并发收货聚合状态。"""
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 import allure
-import requests
+import pytest
 
-from api.common.assert_util import assert_status
-from api.common.db_util import assert_db_value
+from api.api_client import ApiClient
+from api.common.assert_util import assert_ok, assert_error
 from api.tests.constants import STORE1, STORE2
 
 
 @allure.feature("并发防超卖")
-@allure.story("三号商品防超卖测试")
-@allure.severity(allure.severity_level.CRITICAL)
-def test_concurrent_order_no_oversell(base_url, config, db):
-    with allure.step("bob 登录并查询商品 3 库存"):
-        bob = config["users"]["bob"]
-        login_resp = requests.post(
-            f"{base_url}/login",
-            json={"username": bob["username"], "password": bob["password"]},
-        )
-        token = login_resp.json()["token"]
-        headers = {"Authorization": f"Bearer {token}"}
-        store_id, product_id = STORE1, 3
-        stock = requests.get(
-            f"{base_url}/stores/{store_id}/products/{product_id}"
-        ).json()["stock"]
+@allure.story("两个独立买家抢最后一件")
+@pytest.mark.parametrize("product_id", [3, 4], ids=["mouse", "monitor"])
+def test_concurrent_order_no_oversell(product_id, base_url, config, db):
+    seller = ApiClient(base_url, retry=0)
+    user = config["users"]["seller1"]
+    assert_ok(seller.login(user["username"], user["password"]))
+    assert_ok(seller.update_stock(STORE1, product_id, 1))
+    clients = []
+    for name in ("alice", "bob"):
+        client = ApiClient(base_url, retry=0)
+        user = config["users"][name]
+        assert_ok(client.login(user["username"], user["password"]))
+        assert_ok(client.cart_add(STORE1, product_id, 1))
+        clients.append(client)
+    barrier = Barrier(2, timeout=10)
 
-    def place_order(_):
-        requests.post(
-            f"{base_url}/cart", headers=headers,
-            json={"store_id": store_id, "product_id": product_id, "quantity": 1},
-        )
-        return requests.post(f"{base_url}/order", headers=headers).status_code
+    def place_order(client):
+        barrier.wait()
+        return client.order_create()
 
-    with allure.step("20 线程并发下单（超出库存）"):
-        with ThreadPoolExecutor(max_workers=20) as ex:
-            results = list(ex.map(place_order, range(stock + 30)))
-
-    with allure.step("断言无超卖"):
-        success = sum(1 for c in results if c == 200)
-        final_stock = requests.get(
-            f"{base_url}/stores/{store_id}/products/{product_id}"
-        ).json()["stock"]
-        assert success <= stock
-        assert final_stock >= 0
-        sold = db.scalar(
-            "SELECT COALESCE(SUM(oi.quantity), 0) AS n FROM order_items oi "
-            "JOIN sub_orders so ON oi.sub_order_id=so.sub_order_id "
-            "WHERE so.store_id=%s AND oi.product_id=%s",
-            (store_id, product_id),
-        )
-        assert sold == stock - final_stock, (
-            f"落库的购买数量 {sold} 应等于库存减少量 {stock - final_stock}"
-        )
-        assert sold <= stock, "落库的购买数量不应超过初始库存"
-
-
-@allure.feature("并发防超卖")
-@allure.story("四号商品防超卖测试")
-@allure.severity(allure.severity_level.CRITICAL)
-def test_concurrent_order_no_oversell_another(base_url, config, db):
-    with allure.step("bob 登录并查询商品 4 库存"):
-        bob = config["users"]["bob"]
-        login_resp = requests.post(
-            f"{base_url}/login",
-            json={"username": bob["username"], "password": bob["password"]},
-        )
-        token = login_resp.json()["token"]
-        headers = {"Authorization": f"Bearer {token}"}
-        store_id, product_id = STORE1, 4
-        stock = requests.get(
-            f"{base_url}/stores/{store_id}/products/{product_id}"
-        ).json()["stock"]
-
-    def place_order(_):
-        requests.post(
-            f"{base_url}/cart", headers=headers,
-            json={"store_id": store_id, "product_id": product_id, "quantity": 1},
-        )
-        return requests.post(f"{base_url}/order", headers=headers).status_code
-
-    with allure.step("20 线程并发下单（超出库存）"):
-        with ThreadPoolExecutor(max_workers=20) as ex:
-            results = list(ex.map(place_order, range(stock + 20)))
-
-    with allure.step("断言无超卖"):
-        success = sum(1 for c in results if c == 200)
-        final_stock = requests.get(
-            f"{base_url}/stores/{store_id}/products/{product_id}"
-        ).json()["stock"]
-        assert success <= stock
-        assert final_stock >= 0
-        sold = db.scalar(
-            "SELECT COALESCE(SUM(oi.quantity), 0) AS n FROM order_items oi "
-            "JOIN sub_orders so ON oi.sub_order_id=so.sub_order_id "
-            "WHERE so.store_id=%s AND oi.product_id=%s",
-            (store_id, product_id),
-        )
-        assert sold == stock - final_stock, (
-            f"落库的购买数量 {sold} 应等于库存减少量 {stock - final_stock}"
-        )
-        assert sold <= stock, "落库的购买数量不应超过初始库存"
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(place_order, clients))
+        assert sorted(r.status_code for r in results) == [200, 400], [r.text for r in results]
+        winner = next(r for r in results if r.status_code == 200)
+        loser_index = next(i for i, r in enumerate(results) if r.status_code == 400)
+        assert_error(results[loser_index], 400, "库存不足")
+        assert db.scalar("SELECT stock FROM store_product WHERE store_id=%s AND product_id=%s", (STORE1, product_id)) == 0
+        assert db.scalar("SELECT COUNT(*) FROM orders") == 1
+        assert db.scalar("SELECT COUNT(*) FROM sub_orders") == 1
+        assert db.all("SELECT product_id, quantity FROM order_items") == [{"product_id": product_id, "quantity": 1}]
+        winner_name = ("alice", "bob")[1 - loser_index]
+        loser_name = ("alice", "bob")[loser_index]
+        order = db.one("SELECT username, status FROM orders WHERE order_id=%s", (winner.json()["order_id"],))
+        assert order == {"username": winner_name, "status": "pending"}
+        assert db.all("SELECT username, quantity FROM carts") == [{"username": loser_name, "quantity": 1}]
+    finally:
+        seller.session.close()
+        for client in clients:
+            client.session.close()
 
 
 @allure.feature("并发确认收货")
-@allure.story("并发确认两个子订单，父订单正确流转为 completed")
-@allure.severity(allure.severity_level.CRITICAL)
+@allure.story("并发收货全部子单，父单最终完成")
 def test_concurrent_confirm_parent_completed(base_url, config, db):
-    alice = config["users"]["alice"]
-    seller1 = config["users"]["seller1"]
-    seller2 = config["users"]["seller2"]
+    buyer = ApiClient(base_url, retry=0)
+    seller = ApiClient(base_url, retry=0)
+    try:
+        user = config["users"]["alice"]
+        assert_ok(buyer.login(user["username"], user["password"]))
+        for store, product in [(STORE1, 1), (STORE2, 5)]:
+            assert_ok(buyer.cart_add(store, product, 1))
+        response = buyer.order_create()
+        assert_ok(response)
+        order = response.json()
+        assert len(order["sub_orders"]) == 2
+        assert_ok(buyer.order_pay(order["order_id"]))
+        for sub in order["sub_orders"]:
+            user = config["users"][f"seller{sub['store_id']}"]
+            assert_ok(seller.login(user["username"], user["password"]))
+            assert_ok(seller.sub_order_ship(sub["sub_order_id"]))
+        # 两条线程各持独立 Session，避免客户端共享状态影响服务端并发结论。
+        clients = [ApiClient(base_url, retry=0) for _ in range(2)]
+        for client in clients:
+            client.token = buyer.token
+        barrier = Barrier(2, timeout=10)
 
-    def login(user):
-        resp = requests.post(
-            f"{base_url}/login",
-            json={"username": user["username"], "password": user["password"]},
-        )
-        return {"Authorization": f"Bearer {resp.json()['token']}"}
+        def confirm(pair):
+            client, sub = pair
+            barrier.wait()
+            return client.sub_order_confirm(sub["sub_order_id"])
 
-    with allure.step("alice 跨店铺下单（拆 2 子订单）并支付"):
-        alice_headers = login(alice)
-        requests.post(
-            f"{base_url}/cart", headers=alice_headers,
-            json={"store_id": STORE1, "product_id": 1, "quantity": 1},
-        )
-        requests.post(
-            f"{base_url}/cart", headers=alice_headers,
-            json={"store_id": STORE2, "product_id": 5, "quantity": 1},
-        )
-        order_resp = requests.post(f"{base_url}/order", headers=alice_headers)
-        order_id = order_resp.json()["order_id"]
-        sub_orders = order_resp.json()["sub_orders"]
-        assert len(sub_orders) == 2
-        sub1 = next(so["sub_order_id"] for so in sub_orders if so["store_id"] == STORE1)
-        sub2 = next(so["sub_order_id"] for so in sub_orders if so["store_id"] == STORE2)
-        requests.post(f"{base_url}/order/{order_id}/pay", headers=alice_headers)
-
-    with allure.step("两个店铺分别发货"):
-        ship1 = requests.post(f"{base_url}/sub-orders/{sub1}/ship", headers=login(seller1))
-        ship2 = requests.post(f"{base_url}/sub-orders/{sub2}/ship", headers=login(seller2))
-        assert_status(ship1, 200)
-        assert_status(ship2, 200)
-
-    def confirm(sub_id):
-        return requests.post(
-            f"{base_url}/sub-orders/{sub_id}/confirm", headers=alice_headers
-        ).status_code
-
-    with allure.step("并发确认两个子订单"):
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            results = list(ex.map(confirm, [sub1, sub2]))
-
-    with allure.step("断言父订单最终状态为 completed"):
-        assert all(code == 200 for code in results)
-        detail = requests.get(f"{base_url}/order/{order_id}", headers=alice_headers).json()
-        assert detail["status"] == "completed"
-        assert_db_value(
-            db, "SELECT status FROM orders WHERE order_id=%s",
-            "completed", (order_id,), "并发确认后父订单状态",
-        )
-        assert_db_value(
-            db,
-            "SELECT COUNT(*) AS n FROM sub_orders WHERE parent_order_id=%s AND status<>'completed'",
-            0, (order_id,), "两个子订单都应完成",
-        )
+        try:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                responses = list(executor.map(confirm, zip(clients, order["sub_orders"])))
+            for response in responses:
+                assert_ok(response)
+                assert response.json()["status"] == "completed"
+        finally:
+            for client in clients:
+                client.session.close()
+        assert db.scalar("SELECT status FROM orders WHERE order_id=%s", (order["order_id"],)) == "completed"
+        rows = db.all("SELECT status FROM sub_orders WHERE parent_order_id=%s", (order["order_id"],))
+        assert len(rows) == 2
+        assert all(row["status"] == "completed" for row in rows)
+    finally:
+        buyer.session.close()
+        seller.session.close()

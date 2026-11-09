@@ -84,7 +84,7 @@ def test_cancel_expired_orders(api_client, login_user, db):
         assert_ok(resp)
         assert resp.json()["cancelled"] == 1
     with allure.step("断言订单已取消、库存已回补"):
-        assert api_client.orders().json()["orders"][-1]["status"] == "canceled"
+        assert next(o for o in api_client.orders().json()["orders"] if o["order_id"] == order_id)["status"] == "canceled"
         assert api_client.store_product(store_id, product_id).json()["stock"] == stock_before
         assert_db_value(
             db, "SELECT status FROM orders WHERE order_id=%s",

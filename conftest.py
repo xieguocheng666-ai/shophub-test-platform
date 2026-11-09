@@ -56,11 +56,11 @@ def reset_data(api_client):
 
 @pytest.fixture()
 def db():
-    """直连被测库的只读校验句柄；本地无 MySQL 时跳过依赖它的用例。"""
+    """数据库是完整验收的必需依赖，不可达时报告准备错误。"""
     try:
         conn = db_util.connect()
     except pymysql.err.OperationalError as exc:
-        pytest.skip(f"数据库不可达，跳过 DB 校验：{exc}")
+        pytest.fail(f"数据库不可达，无法完成数据校验：{exc}", pytrace=False)
     yield db_util.DB(conn)
     conn.close()
 

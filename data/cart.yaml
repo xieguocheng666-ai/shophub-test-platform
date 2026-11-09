@@ -9,6 +9,12 @@ insufficient_stock:
     expect_detail: "库存不足"
 
 invalid_quantity:
+  - id: 数量负数
+    store_id: 1
+    product_id: 1
+    quantity: -1
+    expect_code: 400
+    expect_detail: "数量必须大于 0"
   - id: 数量非法
     store_id: 1
     product_id: 1

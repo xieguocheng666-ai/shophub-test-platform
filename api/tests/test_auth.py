@@ -68,6 +68,7 @@ def test_login(username, password, expect_code, expect_detail, api_client):
 @pytest.mark.parametrize("keyword,expect_count", _load_search_cases())
 def test_search_products(keyword, expect_count, api_client):
     resp = api_client.products(keyword)
+    assert_ok(resp)
     items = resp.json()["items"]
     assert len(items) == expect_count
     if keyword:

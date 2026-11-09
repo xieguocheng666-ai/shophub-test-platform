@@ -2,6 +2,7 @@
 import allure
 import pytest
 import requests
+from decimal import Decimal
 
 from api.api_client import ApiClient
 from api.common.assert_util import assert_error, assert_ok
@@ -18,7 +19,12 @@ def test_order_full_flow(api_client, login_user, config, db):
     alice = config["users"]["alice"]
 
     with allure.step("加购商品到购物车"):
-        api_client.cart_add(STORE1, 2, 1)
+        product = db.one("SELECT price, stock FROM store_product WHERE store_id=1 AND product_id=2")
+        quantity = 2
+        expected_total = product["price"] * quantity
+        expected_stock = product["stock"] - quantity
+        assert_ok(api_client.cart_add(STORE1, 2, quantity))
+        assert db.scalar("SELECT stock FROM store_product WHERE store_id=1 AND product_id=2") == product["stock"]
 
     with allure.step("创建订单"):
         order_resp = api_client.order_create()
@@ -26,10 +32,26 @@ def test_order_full_flow(api_client, login_user, config, db):
         order_id = order_resp.json()["order_id"]
         sub_order_id = order_resp.json()["sub_orders"][0]["sub_order_id"]
         assert order_resp.json()["status"] == "pending"
+        assert Decimal(str(order_resp.json()["total"])) == expected_total
+        assert db.one("SELECT username, status, total FROM orders WHERE order_id=%s", (order_id,)) == {
+            "username": login_user["username"], "status": "pending", "total": expected_total,
+        }
+        assert db.all("SELECT store_id, status, total FROM sub_orders WHERE parent_order_id=%s", (order_id,)) == [
+            {"store_id": STORE1, "status": "pending", "total": expected_total}
+        ]
+        assert db.all("SELECT product_id, price, quantity FROM order_items WHERE sub_order_id=%s", (sub_order_id,)) == [
+            {"product_id": 2, "price": product["price"], "quantity": quantity}
+        ]
+        assert db.scalar("SELECT stock FROM store_product WHERE store_id=1 AND product_id=2") == expected_stock
+        assert db.scalar("SELECT COUNT(*) FROM carts WHERE username=%s", (login_user["username"],)) == 0
 
     with allure.step("支付订单"):
         pay_resp = api_client.order_pay(order_id)
+        assert_ok(pay_resp)
         assert pay_resp.json()["status"] == "paid"
+        assert db.scalar("SELECT status FROM orders WHERE order_id=%s", (order_id,)) == "paid"
+        assert db.scalar("SELECT status FROM sub_orders WHERE sub_order_id=%s", (sub_order_id,)) == "paid"
+        assert db.scalar("SELECT stock FROM store_product WHERE store_id=1 AND product_id=2") == expected_stock
         allure.attach(
             str(pay_resp.status_code),
             name="状态码",
@@ -43,10 +65,15 @@ def test_order_full_flow(api_client, login_user, config, db):
 
     with allure.step("商家发货"):
         api_client.login(seller1["username"], seller1["password"])
-        assert api_client.sub_order_ship(sub_order_id).json()["status"] == "shipped"
+        ship_resp = api_client.sub_order_ship(sub_order_id)
+        assert_ok(ship_resp)
+        assert ship_resp.json()["status"] == "shipped"
+        assert db.scalar("SELECT status FROM sub_orders WHERE sub_order_id=%s", (sub_order_id,)) == "shipped"
     with allure.step("买家确认收货"):
         api_client.login(alice["username"], alice["password"])
-        assert api_client.sub_order_confirm(sub_order_id).json()["status"] == "completed"
+        confirm_resp = api_client.sub_order_confirm(sub_order_id)
+        assert_ok(confirm_resp)
+        assert confirm_resp.json()["status"] == "completed"
 
     with allure.step("直连数据库确认最终状态已落库"):
         assert_db_value(
@@ -63,8 +90,10 @@ def test_order_full_flow(api_client, login_user, config, db):
             "SELECT SUM(oi.quantity) AS n FROM order_items oi "
             "JOIN sub_orders so ON oi.sub_order_id=so.sub_order_id "
             "WHERE so.parent_order_id=%s",
-            1, (order_id,), "订单明细数量",
+            quantity, (order_id,), "订单明细数量",
         )
+        assert db.scalar("SELECT stock FROM store_product WHERE store_id=1 AND product_id=2") == expected_stock
+        assert db.scalar("SELECT total FROM orders WHERE order_id=%s", (order_id,)) == expected_total
 
 
 @allure.feature("状态机")
@@ -148,7 +177,7 @@ def test_pay_fail_cancels_and_restores_stock(api_client, login_user, payment_mod
         assert_ok(resp)
         assert resp.json()["status"] == "failed"
     with allure.step("订单取消"):
-        assert api_client.orders().json()["orders"][-1]["status"] == "canceled"
+        assert next(o for o in api_client.orders().json()["orders"] if o["order_id"] == order_id)["status"] == "canceled"
         assert_db_value(
             db, "SELECT status FROM orders WHERE order_id=%s",
             "canceled", (order_id,), "支付失败后父订单状态",
@@ -187,7 +216,7 @@ def test_pay_fail_then_repay_rejected(api_client, login_user, payment_mode, db):
         resp = api_client.order_pay(order_id)
     with allure.step("断言再次支付被拒（400）"):
         assert_error(resp, 400, "订单状态不允许支付")
-    with allure.step("确认没有二次扣款或二次回补"):
+    with allure.step("确认没有错误改状态或二次回补（本项目无真实扣款）"):
         assert_db_value(
             db, "SELECT status FROM orders WHERE order_id=%s",
             "canceled", (order_id,), "重复支付不应把订单改回已支付",
@@ -201,13 +230,13 @@ def test_pay_fail_then_repay_rejected(api_client, login_user, payment_mode, db):
 @allure.feature("支付异常")
 @allure.story("支付超时")
 @allure.severity(allure.severity_level.CRITICAL)
-def test_pay_timeout_triggers_retry(base_url, login_user, payment_mode, db):
+def test_pay_timeout_preserves_order_and_stock(base_url, login_user, payment_mode, db):
     payment_mode("timeout")
     stock_before = db.scalar(
         "SELECT stock FROM store_product WHERE store_id=%s AND product_id=%s", (STORE1, 2)
     )
     # 用短超时 client 加速（1s < 服务端 6s 挂起）
-    client = ApiClient(base_url, timeout=1, retry=2)
+    client = ApiClient(base_url, timeout=1, retry=0)
     client.token = login_user["token"]
     with allure.step("加购并创建订单"):
         client.cart_add(STORE1, 2, 1)

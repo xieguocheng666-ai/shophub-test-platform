@@ -1,4 +1,6 @@
-# ShopHub 性能测试 — 进度追踪（临时文档）
+# ShopHub 性能测试 — 历史记录与项目进展
+
+> 2026-11-09复核更正：旧零错误、倍数与因果结论已被下文更正，当前结论只看 [report.md](report.md)。历史条件和个人参与程度未重新验收。
 
 > 计划见 `PERF_TEST_PLAN.md`。本文件只记进度与关键数据，最终报告另写 `report.md`。
 
@@ -44,7 +46,7 @@
 | order 场景 100% 401 失败 | on_start 登录失败→token=None→下单 401 死循环 | locustfile 加 `_ensure_login_and_cart`（重试 3 次）+ task 内 token 保护 |
 | 档位间污染 | 前一档打崩服务，后一档接着跑全废 | workers 调大后消除过载 |
 
-## 三、最终结果（已全部完成）
+## 三、历史执行记录（不等于本次独立复现）
 
 - ✅ 基线压测（无连接池）：3 接口 × 5 档，`perf/results/baseline_*.csv`
 - ✅ 引入 DBUtils 连接池优化 `server/db.py`
@@ -53,18 +55,22 @@
 - ✅ 汇总数据 + 写 `report.md`（含拐点曲线 `results/charts/*.png`）
 - ✅ 回填简历 HTML + 导出 PDF（`D:\简历\成品PDF\谢国城-软件测试-简历.pdf`）
 
-**核心数据（全程 0 错误）：**
+**历史峰值摘录（500用户下单有213次失败，非全程零错误）：**
 
 | 接口 | 优化前 TPS 峰值 | 优化后 TPS 峰值 | 提升 |
 |------|----------------|----------------|------|
-| 登录 | 96.6 | 188.1 | 1.8 倍 |
+| 登录 | 96.6 | 188.1 | 1.95倍（不同用户数峰值） |
 | 搜索 | 183.9 | 1761.0 | 9.6 倍 |
 | 下单 | 29.4 | 496.0 | 16.9 倍 |
 
-行锁竞争：hot（抢同商品）vs spread（分散）吞吐下降 **14%–24%**。
+hot与spread的部分历史档位请求速率差约14%至24%；没有锁等待监控，因果未确认，500用户spread含失败。
 
 ## 五、关键决策记录
 
 - **连接池改造方案**：`PooledDB(creator=pymysql, maxconnections=50, mincached=5, maxcached=50, blocking=True, ping=1, reset=True, autocommit=False)`；`get_conn()` 返回 `_get_pool().connection()`，`conn.close()` 语义变为「归还池」；`init_db()` 里「无库连接」保持原生 `pymysql.connect`。
 - **autocommit 必须 False**：现有代码用 `conn.begin()/commit()/rollback()`，autocommit=True 会报错；`reset=True` 归还时自动回滚未提交事务。
 - **多 worker + 连接池**：4 worker 各进程独立 PooledDB，每进程 max 50 连接，总 200 < 800，符合生产多进程部署。
+
+## 2026-11-09证据核对
+
+- 11-09 逐文件核对保留CSV，纠正500用户下单213次HTTP400、每秒404.84请求与登录倍数；原始CSV保留，报告改为可追溯历史观测，未重跑压测。

@@ -69,6 +69,11 @@ services:
       dockerfile: Dockerfile.test
     environment:
       BASE_URL: http://sut:8000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: shop123
+      DB_NAME: shop
       SECRET_KEY: dev-secret-key-change-me-not-for-prod   # 与 sut 一致，供伪造过期 token 的测试用
     depends_on:
       sut:

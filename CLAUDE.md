@@ -54,7 +54,7 @@ my-test-framework/
 ├── Dockerfile.test          # 测试运行器镜像（含 Playwright Chromium）
 ├── .github/workflows/ci.yml
 ├── requirements.txt
-├── pytest.ini               # testpaths=api ui；addopts 含 playwright 截图/trace
+├── pytest.ini               # testpaths=unit api ui；addopts 含 playwright 截图/trace
 └── .env / .env.example
 ```
 
@@ -65,7 +65,7 @@ my-test-framework/
 **平台模式**：一个商家可开多店，商品是 SPU（`products` 只有名字），价格/库存下放到店铺维度（`store_product`）。
 
 - 表：`users`（buyer/seller）→ `stores` → `store_product`（价格库存在这）→ `carts` / `orders`（父订单）+ `sub_orders`（子订单，按店铺拆）+ `order_items`（明细）。
-- 订单状态机：`pending → paid → shipped → completed`（父订单），子订单同机 + `canceled`。
+- 订单状态机：父订单 `pending → paid → completed`，可从pending取消；子订单 `pending → paid → shipped → completed`，可从pending取消。
 - 种子账号：`alice`/`bob`（buyer）、`seller1`/`seller2`（seller），密码见 `config/config.yaml`。
 
 ### 4.2 测试框架三层
@@ -85,7 +85,7 @@ my-test-framework/
 # 1. 终端1 起 SUT —— 必须 DEBUG_MODE=1，否则 /debug/* 故障注入路由不注册，测试 reset 失败全挂
 DEBUG_MODE=1 .venv/Scripts/python -m uvicorn server.main:app --reload
 
-# 2. 终端2 跑测试（testpaths=api ui，不含 perf）
+# 2. 终端2 跑测试（testpaths=unit api ui，不含 perf）
 .venv/Scripts/python -m pytest
 
 # 3. Allure 报告
@@ -124,9 +124,15 @@ CI（`.github/workflows/ci.yml`）：push/PR 到 main/master 触发 → `docker 
 
 - 数据库结构参考：`docs/database-structure.md`（表结构 + 实例数据 + 下单数据流）。
 - 接口用例说明：`docs/test-cases.md`（每条用例测什么/前置/操作/校验，含数据库断言说明）。
-- **开发进度** → `D:\秋招追踪\进度追踪.md`；**教学/面试准备进度** → `D:\秋招追踪\shophub-onboarding.md`（Map→Walk→Probe→Master 四级）。
+- 核心购买链路用例含数量边界、累计加购、独立金额预期、失败回滚、重复支付和多子单聚合；并发用独立买家同步抢最后一件，不能改回共用购物车的场景。数据库不可达会报告准备错误，测试进程与服务必须连接同一专用库。
+- 用例前重置共享库，因此整套用例按顺序运行；不支持不同测试共享同库并行执行。直接触发关单不等于验证 Celery 实际调度。
+- **项目质量与验证** → `docs/quality-review-2026-11-09.md`；求职与面试进度只记 `D:/实习投递追踪/进度追踪.md`，不把项目代码进度写进求职主表。
 
 ## 九、协作原则
 
 - 关键决策与动手环节留给用户（面试深挖不露馅），我负责搭框架、讲解、模拟面试追问。
 - 对话用简体中文；心理健康优先于进度，不催不施压。
+
+### 2026-11-09质量边界
+
+默认pytest包含18单元、67接口、5UI；单元目录覆盖reset_data，不连外部服务。客户端写操作不自动重放，GET/HEAD连接或超时才有界重试。负价格/非有限价格和负库存被请求体校验拒绝，零值保留。init_db建库名仍硬编码shop，独立验收库由验证流程预建；不得误以为切DB_NAME就会自动建新库。原始压测证据与报告以perf/report.md核对版为准。

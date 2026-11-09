@@ -16,7 +16,7 @@ from anyio import to_thread
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from server import db
 
@@ -68,12 +68,12 @@ class StoreCreate(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str
-    price: float
-    stock: int
+    price: float = Field(ge=0, allow_inf_nan=False)
+    stock: int = Field(ge=0)
 
 
 class StockUpdate(BaseModel):
-    stock: int
+    stock: int = Field(ge=0)
 
 
 # ---------- JWT 鉴权 ----------

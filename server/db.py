@@ -429,7 +429,13 @@ def update_stock(store_id: int, product_id: int, stock: int):
                 (stock, store_id, product_id),
             )
             if cur.rowcount == 0:
-                raise HTTPException(status_code=404, detail="店铺中没有该商品")
+                # 写入原库存也会返回零，不能将“没有变化”误判为“不存在”。
+                cur.execute(
+                    "SELECT 1 FROM store_product WHERE store_id=%s AND product_id=%s",
+                    (store_id, product_id),
+                )
+                if cur.fetchone() is None:
+                    raise HTTPException(status_code=404, detail="店铺中没有该商品")
         conn.commit()
     finally:
         conn.close()
