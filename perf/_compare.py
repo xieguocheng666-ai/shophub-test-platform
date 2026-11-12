@@ -1,4 +1,6 @@
-"""对比 baseline vs pooled 的关键指标，输出 markdown 对比表。跑完即删。
+"""对比历史 baseline/pooled 的请求速率和P95，输出Markdown表。
+
+Requests/s包含失败请求，不表示成功事务吞吐；错误数与证据边界见report.md。
 
 用法: python perf/_compare.py
 """
@@ -32,8 +34,8 @@ def num(row, key):
 
 def main():
     for scen in SCENARIOS:
-        print(f"\n## {scen}（TPS 与 P95 对比）")
-        print("| 并发 | 基线TPS | 池化TPS | 提升 | 基线P95(ms) | 池化P95(ms) | P95降幅 |")
+        print(f"\n## {scen}（请求/秒与 P95 对比，请求包含失败）")
+        print("| 虚拟用户数 | 基线请求/秒 | 池化请求/秒 | 请求速率比 | 基线P95(ms) | 池化P95(ms) | P95降幅 |")
         print("|---|---|---|---|---|---|---|")
         for u in USERS:
             b = load("baseline", scen, u)
@@ -49,7 +51,7 @@ def main():
                 f"| {u} | {bt:.1f} | {pt:.1f} | {speedup:.2f}x | "
                 f"{bp:.0f} | {pp:.0f} | {p95_reduce:.0f}% |"
             )
-        # 找拐点：TPS 峰值档
+        # 找已测档位中的请求速率峰值；不自动认定为性能拐点
         peak_u, peak_tps = None, 0
         for u in USERS:
             p = load("pooled", scen, u)
@@ -58,7 +60,7 @@ def main():
             t = num(p, "Requests/s")
             if t > peak_tps:
                 peak_tps, peak_u = t, u
-        print(f"> 池化后 {scen} TPS 峰值 ≈ {peak_tps:.1f}（@ {peak_u} 并发）")
+        print(f"> 池化后 {scen} 请求/秒峰值 ≈ {peak_tps:.1f}（@ {peak_u} 虚拟用户）")
 
 
 if __name__ == "__main__":

@@ -20,8 +20,8 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="Asia/Shanghai",
     enable_utc=True,
-    result_expires=3600,              # 结果 1h 过期，避免 Redis 内存泄漏
-    task_acks_late=True,              # 任务执行完才 ack，worker 崩溃不丢任务
+    result_expires=3600,              # 任务结果1小时过期，限制结果保留时间
+    task_acks_late=True,              # 延迟确认；不保证所有进程退出场景都重新投递
     worker_prefetch_multiplier=1,     # 避免单 worker 囤积任务
     broker_connection_retry_on_startup=True,
 )

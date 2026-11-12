@@ -1,4 +1,7 @@
-"""画「并发-TPS」与「并发-P95」拐点曲线（baseline vs pooled），跑完即删。
+"""画历史虚拟用户数与请求速率/P95曲线，不据此确认拐点或瓶颈。
+
+请求速率包含失败；没有成功率与业务校验时不能称为成功事务吞吐。
+保留tps_curve.png历史文件名以兼容旧路径，纵轴使用Requests/s。
 
 用法: python perf/_plot.py
 输出: perf/results/charts/tps_curve.png / p95_curve.png
@@ -53,11 +56,11 @@ def make_figure(metric, ylabel, fname):
         ax.plot(USERS, base, "o--", color="#c0504d", label="无连接池")
         ax.plot(USERS, pool, "o-", color="#1f6fb2", label="连接池")
         ax.set_title(cname, fontsize=12)
-        ax.set_xlabel("并发数")
+        ax.set_xlabel("虚拟用户数")
         ax.set_ylabel(ylabel)
         ax.grid(alpha=0.3)
         ax.legend(fontsize=9)
-    fig.suptitle(f"并发 - {ylabel}", fontsize=14)
+    fig.suptitle(f"虚拟用户数 - {ylabel}", fontsize=14)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     os.makedirs(OUT_DIR, exist_ok=True)
     fig.savefig(os.path.join(OUT_DIR, fname), dpi=130)
@@ -65,5 +68,5 @@ def make_figure(metric, ylabel, fname):
 
 
 if __name__ == "__main__":
-    make_figure("Requests/s", "TPS", "tps_curve.png")
+    make_figure("Requests/s", "Requests/s (including failures)", "tps_curve.png")
     make_figure("95%", "P95 响应时间 (ms)", "p95_curve.png")

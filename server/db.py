@@ -1,8 +1,8 @@
 """数据访问层：被测系统对 MySQL 的所有 SQL 操作。
 
-核心对象：pymysql.Connection。每个操作独立建连、用完关闭——
-FastAPI 把同步 handler 丢进线程池跑，共享连接会有线程安全问题，
-所以每个操作各自建连，简单且线程安全。
+核心对象：DBUtils PooledDB 管理的 PyMySQL 连接。每个进程持有自己的池，
+每次操作独立借用连接，在 finally 中 close() 归还，不是每次新建物理连接。
+FastAPI 同步 handler 在线程池执行，不跨请求共享正在使用的连接。
 
 数据库连接信息从环境变量读（.env 注入），不写死在代码里。
 """
@@ -15,7 +15,7 @@ from dbutils.pooled_db import PooledDB
 from fastapi import HTTPException
 from pymysql.cursors import DictCursor
 
-# ---------- 种子数据（建库时插入，与真实电商初始数据一致） ----------
+# ---------- 种子数据（建库时插入的模拟商城测试数据） ----------
 SEED_USERS = [
     ("alice", "alice123", "爱丽丝", "buyer"),
     ("bob", "bob123", "鲍勃", "buyer"),

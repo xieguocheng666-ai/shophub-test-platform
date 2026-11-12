@@ -72,7 +72,7 @@ UI另有5条；下单除跳转外，检查页面数量2、金额598及数据库�
 
 ## 验证方式与边界
 
-常规验证：`.venv/Scripts/python.exe -m pytest api ui -q -o addopts=`，先设置专用 DB_NAME 与 BASE_URL。
+完整回归命令：`.venv/Scripts/python.exe -m pytest unit api ui -q -o addopts='' --browser chromium`，先预建专用库并核对DB_NAME与BASE_URL。仅运行接口/网页时可选择api ui，不把其结果算作包含unit的90条回归。
 关键用例还做临时内存故障注入：让父子订单及明细一起多算单价、失败下单额外扣库存，检查测试能失败，然后关闭故障服务并对原始业务重新回归。
 故障注入用于验证测试敏感度，不是发现了真实生产缺陷，不计入真实缺陷经历。
 

@@ -25,8 +25,8 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # 压测环境：调大 anyio 默认线程池上限（默认 40），避免同步 handler 高并发下排队/拒绝连接。
-    # 生产可配 THREADPOOL_SIZE；默认 100（低于 MySQL max_connections=151，留余量）。
+    # 同步 handler 线程并发上限由 THREADPOOL_SIZE 配置，当前默认100。
+    # 多进程会叠加线程与连接需求；该值不保证避免排队或连接拒绝，需结合资源测量。
     to_thread.current_default_thread_limiter().total_tokens = int(
         os.getenv("THREADPOOL_SIZE", "100")
     )

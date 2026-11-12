@@ -5,12 +5,12 @@
     SCENARIO=search locust -f perf/locustfile.py --headless -u 100 -r 50 -t 60s --csv perf/results/base_search_100
     # 下单场景（分散商品，测整体吞吐）
     SCENARIO=order ORDER_MODE=spread locust -f perf/locustfile.py --headless -u 100 -r 50 -t 60s --csv perf/results/base_order_100
-    # 下单场景（抢同一商品，测行锁竞争吞吐上限）
+    # 下单场景（热点商品，观察集中访问下的请求表现）
     SCENARIO=order ORDER_MODE=hot locust -f perf/locustfile.py --headless -u 100 -r 50 -t 60s --csv perf/results/hot_order_100
 
 环境变量：
     SCENARIO       login | search | order（默认 order）
-    ORDER_MODE     hot（抢同一商品，测行锁）| spread（分散商品，默认）
+    ORDER_MODE     hot（集中访问同一库存行）| spread（分散商品，默认）
     BASE_URL       被测地址（默认 http://127.0.0.1:8000）
     PERF_USER_COUNT 账号池大小（默认 1000）
 """
@@ -57,7 +57,7 @@ class ShopUser(HttpUser):
             self._ensure_login_and_cart()
 
     def _ensure_login_and_cart(self):
-        """登录（失败重试）+ 加购，确保下单前购物车有货、token 有效。"""
+        """尝试登录并加购；加购结果未校验，不保证后续下单前置一定满足。"""
         for _ in range(3):
             self.token = self._login()
             if self.token:
