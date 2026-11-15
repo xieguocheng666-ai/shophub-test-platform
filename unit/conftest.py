@@ -1,7 +1,7 @@
-"""纯单元测试覆盖根目录的数据重置，不连接被测服务或数据库。"""
+"""纯单元测试屏蔽根目录的业务服务生命周期，不连接被测服务或数据库。"""
 import pytest
 
 
 @pytest.fixture(autouse=True)
-def reset_data():
+def business_lifecycle():
     yield

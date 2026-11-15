@@ -28,6 +28,9 @@ jobs:
 
   integration:
     needs: unit
+    strategy:
+      matrix:
+        workers: [1, 2]
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -57,11 +60,11 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - run: python -m playwright install --with-deps chromium
       - name: Run full regression in an owned environment
-        run: python -m tools.run_tests --suite all --run-id integration-${{ github.run_id }}-${{ github.run_attempt }} -- -q --browser chromium
+        run: python -m tools.run_tests --suite all --workers ${{ matrix.workers }} --run-id integration-${{ github.run_id }}-${{ github.run_attempt }} -- -q --browser chromium
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: integration-results
+          name: integration-results-${{ matrix.workers }}
           path: reports/engineering/
           retention-days: 14
           if-no-files-found: warn

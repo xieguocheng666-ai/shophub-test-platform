@@ -30,3 +30,5 @@ redis>=5.0
 
 # 性能测试
 locust>=2.20
+pytest-xdist>=3.6
+psutil>=5.9

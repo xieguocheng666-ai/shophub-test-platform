@@ -1,210 +1,232 @@
-"""在本轮独占的数据库和服务上顺序执行测试，finally负责回收资源。"""
+"""每测试进程独占数据库和商城服务，统一登记与回收。"""
 import argparse
 import json
 import os
 import re
-import socket
-import subprocess
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
-
-import pymysql
-import requests
-from dotenv import dotenv_values
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-class RunnerError(RuntimeError):
-    """只包含运行器生成的安全诊断，不传递驱动异常文本。"""
+import subprocess
+import threading
+import xml.etree.ElementTree as ET
+from tools.processes import identity, stop_registered
+from tools.environments import (ROOT, RunnerError, DatabaseCreatedError, load_environment,
+    database_connection, owned_database_name, create_database, drop_database, free_port,
+    stop_process, start_service, wait_for_service, version_info)
 
 
-class DatabaseCreatedError(RunnerError):
-    """DDL成功后关闭管理连接失败；调用方仍拥有并须清理这个库。"""
+def worker_count(suite, requested):
+    return requested if requested is not None else 1 if suite == 'unit' else 2
 
 
-def load_environment():
-    return {**{k: v for k, v in dotenv_values(ROOT / '.env').items() if v is not None}, **os.environ}
+def validate_extras(extras):
+    forbidden = ('--tx', '--px', '-d', '--loadscope-reorder', '--rsyncdir', '-n', '--numprocesses', '--dist', '--max-worker-restart', '--output', '--junit',
+                 '--base-url', '--override-ini', '-o', '-p', '--rootdir', '--confcutdir', '--basetemp')
+    for value in extras:
+        if any(value == x or value.startswith(x + '=') for x in forbidden) or any(value.startswith(x) and len(value) > 2 for x in ['-n', '-o', '-p']):
+            raise ValueError('pytest argument overrides runner-owned configuration')
 
 
-def database_connection(env):
-    return pymysql.connect(host=env.get('DB_HOST', '127.0.0.1'),
-                           port=int(env.get('DB_PORT', '3306')),
-                           user=env.get('DB_USER', 'root'),
-                           password=env.get('DB_PASSWORD', ''),
-                           charset='utf8mb4', autocommit=True,
-                           connect_timeout=10, read_timeout=15, write_timeout=15)
-
-
-def owned_database_name(env):
-    name = env['DB_NAME']
-    if not re.fullmatch(r'shophub_test_[a-f0-9]{32}', name):
-        raise ValueError('Only a generated dedicated database is permitted')
-    return name
-
-
-def create_database(env):
-    name = owned_database_name(env)
-    conn = database_connection(env)
-    created = False
-    try:
-        with conn.cursor() as cur:
-            # Deliberately no IF NOT EXISTS: a collision is never ownership.
-            cur.execute(f'CREATE DATABASE `{name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci')
-            created = True
-    finally:
+def stop_tree(process, registered=None):
+    import psutil
+    records = list(registered or [])
+    if process.poll() is None and getattr(process, 'pid', None):
         try:
-            conn.close()
-        except (Exception, KeyboardInterrupt) as exc:
-            if created:
-                raise DatabaseCreatedError('Created database requires cleanup') from exc
-            raise
-
-
-def drop_database(env):
-    name = owned_database_name(env)
-    conn = database_connection(env)
-    try:
-        with conn.cursor() as cur:
-            cur.execute(f'DROP DATABASE `{name}`')
-    finally:
-        conn.close()
-
-
-def free_port():
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1', 0))
-        return sock.getsockname()[1]
-
-
-def stop_process(process):
-    if process.poll() is None:
-        process.terminate()
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=10)
+            root = psutil.Process(process.pid)
+            existing = {(r['pid'], r['created_at']) for r in records}
+            for proc in [root, *root.children(recursive=True)]:
+                try:
+                    record = identity(proc, 'pytest' if proc.pid == root.pid else 'worker')
+                    if (record['pid'], record['created_at']) not in existing:
+                        records.append(record)
+                except psutil.NoSuchProcess:
+                    pass
+        except psutil.NoSuchProcess:
+            pass
+    failures = stop_registered(records)
+    if failures:
+        raise RunnerError('Owned test process cleanup failed; recover using test-processes.json')
+    if getattr(process, 'pid', None):
+        process.wait(timeout=10)
 
 
 def execute(command, env, log=None, timeout=None):
+    import psutil
     process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log,
                                stderr=subprocess.STDOUT if log else None)
-    try:
-        return process.wait(timeout=timeout)
-    finally:
-        stop_process(process)
-
-
-def start_service(env, log):
-    port = env['BASE_URL'].rsplit(':', 1)[1]
-    return subprocess.Popen([sys.executable, '-m', 'uvicorn', 'server.main:app',
-                             '--host', '127.0.0.1', '--port', port, '--no-access-log'],
-                            cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
-
-
-def wait_for_service(process, env, timeout=30):
-    deadline = time.monotonic() + timeout
-    while True:
-        code = process.poll()
-        if code is not None:
-            raise RunnerError(f'Service exited before readiness (code {code}); see service.log')
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            raise RunnerError('Service readiness deadline exceeded or run identity mismatch; see service.log')
+    started = time.monotonic()
+    records = []
+    journal = env.get('TEST_PROCESS_MANIFEST') if 'pytest' in command else None
+    def observe():
+        if not getattr(process, 'pid', None):
+            return
         try:
-            response = requests.get(env['BASE_URL'] + '/health', timeout=min(1, remaining))
-            if response.status_code == 200 and response.headers.get('X-Test-Run-ID') == env['TEST_RUN_ID']:
-                return
-        except requests.RequestException:
+            root = psutil.Process(process.pid)
+            known = {(r['pid'], r['created_at']) for r in records}
+            for proc in [root, *root.children(recursive=True)]:
+                try:
+                    record = identity(proc, 'pytest' if proc.pid == root.pid else 'worker')
+                    if (record['pid'], record['created_at']) not in known:
+                        records.append(record)
+                        known.add((record['pid'], record['created_at']))
+                        if journal:
+                            save(Path(journal), records)
+                except psutil.NoSuchProcess:
+                    pass
+        except psutil.NoSuchProcess:
             pass
-        time.sleep(min(0.1, max(0, deadline - time.monotonic())))
-
-
-def version_info():
     try:
-        def git(*args):
-            return subprocess.check_output(['git', *args], cwd=ROOT, stderr=subprocess.DEVNULL, text=True).strip()
-        return {'commit': git('rev-parse', 'HEAD'), 'dirty': bool(git('status', '--porcelain'))}
-    except (OSError, subprocess.CalledProcessError):
-        return {'commit': 'unknown', 'dirty': None}
+        while True:
+            observe()
+            try:
+                return process.wait(timeout=.2)
+            except subprocess.TimeoutExpired:
+                fatal = env.get('TEST_FATAL_FILE')
+                if fatal and Path(fatal).exists():
+                    raise RunnerError('Environment contaminated or worker crashed; stopping run')
+                if timeout is not None and time.monotonic() - started >= timeout:
+                    raise RunnerError('Owned child deadline exceeded')
+    finally:
+        if getattr(process, 'pid', None):
+            stop_tree(process, registered=records)
+        else:
+            stop_process(process)
+
+
+def save(path, data):
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf8')
+    temporary.replace(path)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--suite', choices=['unit', 'api', 'all'], required=True)
-    parser.add_argument('--run-id', default=None)
+    parser.add_argument('--workers', type=int)
+    parser.add_argument('--run-id')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'reports' / 'engineering')
-    parser.add_argument('pytest_args', nargs=argparse.REMAINDER, help='pytest arguments after --')
+    parser.add_argument('pytest_args', nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
-    run_id = args.run_id or datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ_') + uuid.uuid4().hex[:10]
-    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,79}', run_id):
+    workers = worker_count(args.suite, args.workers)
+    if workers < 1:
+        parser.error('workers must be positive')
+    extras = args.pytest_args[1:] if args.pytest_args[:1] == ['--'] else args.pytest_args
+    try:
+        validate_extras(extras)
+    except ValueError as exc:
+        parser.error(str(exc))
+    label = args.run_id or 'run_' + uuid.uuid4().hex[:12]
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,79}', label):
         parser.error('run-id must use 1-80 ASCII letters, numbers, underscores or hyphens')
-    output = args.output_dir.resolve() / run_id
-    # Never replace evidence from an earlier run.
+    output = args.output_dir.resolve() / label
     output.mkdir(parents=True, exist_ok=False)
-    summary = {'run_id': run_id, 'suite': args.suite, 'version': version_info(),
-               'exitcode': 2, 'pytest_exitcode': None,
-               'timings': {'prepare': 0, 'execute': 0, 'cleanup': 0},
+    manifest_path = output / 'resources.json'
+    summary = {'run_id': uuid.uuid4().hex, 'label': label, 'suite': args.suite, 'workers': workers,
+               'version': version_info(), 'exitcode': 2, 'pytest_exitcode': None,
+               'timings': {'prepare': 0, 'execute': 0, 'cleanup': 0}, 'environments': [], 'errors': [],
                'cleanup': {'service': 'not_started', 'database': 'not_created'},
-               'reports': {'junit': str(output / 'junit.xml'), 'service': str(output / 'service.log')},
-               'errors': []}
-    env = os.environ.copy()
-    service = None
-    database_created = False
-    started = time.monotonic()
+               'test_process_manifest': str(output / 'test-processes.json')}
+    base = load_environment() if args.suite != 'unit' else os.environ.copy()
+    base.pop('PYTEST_ADDOPTS', None)
+    if args.suite == 'unit':
+        base['TEST_ARTIFACT_DIR'] = str(output / 'unit' / 'diagnostics')
+    base.update(TEST_PROCESS_MANIFEST=summary['test_process_manifest'], TEST_RUN_ID=summary['run_id'], TEST_FATAL_FILE=str(output / 'fatal.txt'), PYTHONUNBUFFERED='1')
+    processes = []
+    logs = []
+    started = total_start = time.monotonic()
     phase = 'prepare'
-    log = (output / 'service.log').open('ab', buffering=0)
+    sampling_stop = threading.Event()
+    def sample_connections():
+        peak = 0
+        while not sampling_stop.wait(.05):
+            try:
+                conn = database_connection(base)
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute('SHOW PROCESSLIST')
+                        names = {e['env']['DB_NAME'] for e in summary['environments']}
+                        peak = max(peak, sum(row[3] in names for row in cur.fetchall()))
+                finally:
+                    conn.close()
+                summary['connection_peak_owned_databases'] = peak
+            except Exception:
+                summary['connection_sampling_errors'] = summary.get('connection_sampling_errors', 0) + 1
+    sampler = None
     try:
         if args.suite != 'unit':
-            env = load_environment()
-            env['DB_NAME'] = 'shophub_test_' + uuid.uuid4().hex
-            env['BASE_URL'] = f'http://127.0.0.1:{free_port()}'
-            env['DEBUG_MODE'] = '1'
-            # This process owns neither a pre-existing database nor service.
-            summary['database'] = env['DB_NAME']
-        env['TEST_RUN_ID'] = run_id
-        env['TEST_ARTIFACT_DIR'] = str(output / 'diagnostics')
-        env['PYTHONUNBUFFERED'] = '1'
-        if args.suite != 'unit':
-            try:
-                create_database(env)
-            except DatabaseCreatedError:
-                database_created = True
-                summary['cleanup']['database'] = 'pending'
-                raise
-            database_created = True
-            summary['cleanup']['database'] = 'pending'
-            code = execute([sys.executable, '-c',
-                            'from server import db; '
-                            'exec("try:\\n db.init_db()\\nexcept Exception as exc:\\n print(type(exc).__name__)\\n raise SystemExit(2)")'],
-                           env=env, log=log, timeout=90)
-            if code:
-                raise RunnerError('Database initialization failed; see service.log')
-            service = start_service(env, log)
-            summary['cleanup']['service'] = 'pending'
-            wait_for_service(service, env)
+            for i in range(workers):
+                worker = 'main' if workers == 1 else f'gw{i}'
+                folder = output / worker
+                folder.mkdir()
+                bound = {'DB_NAME': 'shophub_test_' + uuid.uuid4().hex,
+                         'BASE_URL': f'http://127.0.0.1:{free_port()}', 'DEBUG_MODE': '1',
+                         'TEST_RUN_ID': summary['run_id'], 'TEST_ENVIRONMENT_ID': uuid.uuid4().hex,
+                         'TEST_ARTIFACT_DIR': str(folder / 'diagnostics'),
+                         'DB_POOL_MIN': '0', 'DB_POOL_MAX': '10'}
+                env = {**base, **bound}
+                entry = {'worker': worker, 'env': bound, 'cleanup': {'database': 'not_created', 'service': 'not_started'}}
+                summary['environments'].append(entry)
+                save(manifest_path, summary)
+                try:
+                    create_database(env)
+                except DatabaseCreatedError:
+                    entry['cleanup']['database'] = 'pending'
+                    save(manifest_path, summary)
+                    raise
+                entry['cleanup']['database'] = 'pending'
+                save(manifest_path, summary)
+                log = (folder / 'service.log').open('ab', buffering=0)
+                logs.append(log)
+                if execute([sys.executable, '-c', 'from server import db; db.init_db()'], env, log=log, timeout=90):
+                    raise RunnerError('Database initialization failed; see worker service.log')
+                for attempt in range(3):
+                    service = start_service(env, log)
+                    processes.append((service, entry))
+                    entry.update(service_pid=getattr(service, 'pid', None))
+                    if entry['service_pid'] is not None:
+                        import psutil
+                        try:
+                            entry['service_created_at'] = psutil.Process(service.pid).create_time()
+                        except psutil.NoSuchProcess:
+                            # A bind failure may exit before process inspection; readiness handles retry.
+                            entry['service_created_at'] = None
+                    entry['cleanup']['service'] = 'pending'
+                    save(manifest_path, summary)
+                    try:
+                        wait_for_service(service, env)
+                        break
+                    except RunnerError:
+                        # Only bind failures (process exits) may get another owned port.
+                        if service.poll() is None or attempt == 2:
+                            raise
+                        stop_process(service)
+                        env['BASE_URL'] = bound['BASE_URL'] = f'http://127.0.0.1:{free_port()}'
+                save(manifest_path, summary)
+            sampler = threading.Thread(target=sample_connections, daemon=True)
+            sampler.start()
+            base.update(TEST_ENVIRONMENT_MANIFEST=str(manifest_path), TEST_PARALLEL_WORKERS=str(workers))
         summary['timings']['prepare'] = time.monotonic() - started
         phase = 'execute'
         started = time.monotonic()
         suites = ['unit'] if args.suite == 'unit' else ['api'] if args.suite == 'api' else ['unit', 'api', 'ui']
-        extras = args.pytest_args[1:] if args.pytest_args[:1] == ['--'] else args.pytest_args
-        command = [sys.executable, '-m', 'pytest', *suites, '-o', 'addopts=',
-                   f'--junitxml={output / "junit.xml"}']
+        command = [sys.executable, '-m', 'pytest', '-p', 'test_support.environment_plugin', *suites,
+                   '-o', 'addopts=', f'--junitxml={output / "junit.xml"}']
+        if workers > 1:
+            command += ['-n', str(workers), '--dist', 'load', '--max-worker-restart=0']
         if args.suite == 'all':
-            command += ['--screenshot', 'only-on-failure', '--tracing', 'retain-on-failure',
-                        f'--output={output / "ui"}']
+            command += ['--screenshot', 'only-on-failure', '--tracing', 'retain-on-failure', f'--output={output / "ui"}']
         command += extras
-        summary['pytest_exitcode'] = execute(command, env=env)
+        summary['command'] = command
+        summary['pytest_exitcode'] = execute(command, env=base)
         summary['exitcode'] = summary['pytest_exitcode']
+        if (output / 'junit.xml').exists():
+            suites_xml = ET.parse(output / 'junit.xml').getroot()
+            summary['results'] = {k: sum(int(e.get(k, 0)) for e in suites_xml.findall('testsuite')) for k in ['tests', 'failures', 'errors', 'skipped']}
     except KeyboardInterrupt:
         summary['exitcode'] = 130
         summary['errors'].append({'phase': phase, 'type': 'KeyboardInterrupt'})
     except Exception as exc:
-        # Exception strings may include credentials supplied by drivers; record type only.
         error = {'phase': phase, 'type': type(exc).__name__}
         if isinstance(exc, RunnerError):
             error['detail'] = str(exc)
@@ -213,26 +235,46 @@ def main(argv=None):
     finally:
         summary['timings'][phase] = time.monotonic() - started
         cleanup_start = time.monotonic()
-        if service is not None:
+        sampling_stop.set()
+        if sampler:
+            sampler.join(timeout=20)
+        journal = Path(summary['test_process_manifest'])
+        test_cleanup_errors = []
+        if journal.exists():
+            test_cleanup_errors = stop_registered(json.loads(journal.read_text(encoding='utf8')))
+        summary['test_process_cleanup'] = 'failed' if test_cleanup_errors else 'stopped'
+        if test_cleanup_errors:
+            summary['errors'].append({'phase': 'cleanup_tests', 'type': 'ProcessCleanupFailed'})
+            summary['exitcode'] = summary['exitcode'] or 2
+        # Stop every service before dropping any database.
+        for process, entry in reversed(processes):
             try:
-                stop_process(service)
-                summary['cleanup']['service'] = 'stopped'
+                stop_process(process)
+                if entry['cleanup']['service'] != 'failed':
+                    entry['cleanup']['service'] = 'stopped'
             except (Exception, KeyboardInterrupt) as exc:
-                summary['cleanup']['service'] = 'failed'
+                entry['cleanup']['service'] = 'failed'
                 summary['errors'].append({'phase': 'cleanup_service', 'type': type(exc).__name__})
-        if database_created:
-            try:
-                drop_database(env)
-                summary['cleanup']['database'] = 'removed'
-            except (Exception, KeyboardInterrupt) as exc:
-                summary['cleanup']['database'] = 'failed'
-                summary['errors'].append({'phase': 'cleanup_database', 'type': type(exc).__name__})
-        log.close()
+        for entry in reversed(summary['environments']):
+            if (entry['cleanup']['database'] == 'pending' and entry['cleanup']['service'] != 'failed'
+                    and not test_cleanup_errors):
+                try:
+                    drop_database({**base, **entry['env']})
+                    entry['cleanup']['database'] = 'removed'
+                except (Exception, KeyboardInterrupt) as exc:
+                    entry['cleanup']['database'] = 'failed'
+                    summary['errors'].append({'phase': 'cleanup_database', 'type': type(exc).__name__})
+        for log in logs:
+            log.close()
+        if summary['environments']:
+            summary['cleanup'] = {kind: ('failed' if any(e['cleanup'][kind] in ['failed', 'pending'] for e in summary['environments']) else summary['environments'][0]['cleanup'][kind]) for kind in ['database', 'service']}
         summary['timings']['cleanup'] = time.monotonic() - cleanup_start
-        if 'failed' in summary['cleanup'].values() and summary['exitcode'] == 0:
-            summary['exitcode'] = 2
-        (output / 'summary.json').write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding='utf-8')
-        print(f'Run {run_id}: exit {summary["exitcode"]}; summary: {output / "summary.json"}')
+        summary['total_seconds'] = time.monotonic() - total_start
+        if 'failed' in summary['cleanup'].values():
+            summary['exitcode'] = summary['exitcode'] or 2
+        save(manifest_path, summary)
+        save(output / 'summary.json', summary)
+        print(f'Run {label}: exit {summary["exitcode"]}; summary: {output / "summary.json"}')
     return summary['exitcode']
 
 
