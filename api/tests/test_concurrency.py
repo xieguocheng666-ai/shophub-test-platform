@@ -12,19 +12,14 @@ from api.tests.constants import STORE1, STORE2
 
 @allure.feature("并发防超卖")
 @allure.story("两个独立买家抢最后一件")
-@pytest.mark.parametrize("product_id", [3, 4], ids=["mouse", "monitor"])
-def test_concurrent_order_no_oversell(product_id, base_url, config, db):
-    seller = ApiClient(base_url, retry=0)
-    user = config["users"]["seller1"]
-    assert_ok(seller.login(user["username"], user["password"]))
-    assert_ok(seller.update_stock(STORE1, product_id, 1))
-    clients = []
-    for name in ("alice", "bob"):
-        client = ApiClient(base_url, retry=0)
-        user = config["users"][name]
-        assert_ok(client.login(user["username"], user["password"]))
-        assert_ok(client.cart_add(STORE1, product_id, 1))
-        clients.append(client)
+@pytest.mark.owned_data
+@pytest.mark.parametrize("product_name", ["mouse", "monitor"])
+def test_concurrent_order_no_oversell(product_name, scenario, db):
+    product = scenario.product(scenario.seller(), name=product_name, stock=1)
+    buyers = [scenario.buyer(), scenario.buyer()]
+    clients = [buyer.client for buyer in buyers]
+    for client in clients:
+        assert_ok(client.cart_add(product.store_id, product.product_id, 1))
     barrier = Barrier(2, timeout=10)
 
     def place_order(client):
@@ -38,17 +33,16 @@ def test_concurrent_order_no_oversell(product_id, base_url, config, db):
         winner = next(r for r in results if r.status_code == 200)
         loser_index = next(i for i, r in enumerate(results) if r.status_code == 400)
         assert_error(results[loser_index], 400, "库存不足")
-        assert db.scalar("SELECT stock FROM store_product WHERE store_id=%s AND product_id=%s", (STORE1, product_id)) == 0
-        assert db.scalar("SELECT COUNT(*) FROM orders") == 1
-        assert db.scalar("SELECT COUNT(*) FROM sub_orders") == 1
-        assert db.all("SELECT product_id, quantity FROM order_items") == [{"product_id": product_id, "quantity": 1}]
-        winner_name = ("alice", "bob")[1 - loser_index]
-        loser_name = ("alice", "bob")[loser_index]
+        assert db.scalar("SELECT stock FROM store_product WHERE store_id=%s AND product_id=%s", (product.store_id, product.product_id)) == 0
+        assert db.scalar("SELECT COUNT(*) FROM orders WHERE username IN (%s,%s)", tuple(b.username for b in buyers)) == 1
+        assert db.scalar("SELECT COUNT(*) FROM sub_orders WHERE store_id=%s", (product.store_id,)) == 1
+        assert db.all("SELECT product_id,quantity FROM order_items WHERE product_id=%s", (product.product_id,)) == [{"product_id": product.product_id, "quantity": 1}]
+        winner_name = buyers[1 - loser_index].username
+        loser_name = buyers[loser_index].username
         order = db.one("SELECT username, status FROM orders WHERE order_id=%s", (winner.json()["order_id"],))
         assert order == {"username": winner_name, "status": "pending"}
-        assert db.all("SELECT username, quantity FROM carts") == [{"username": loser_name, "quantity": 1}]
+        assert db.all("SELECT username,quantity FROM carts WHERE store_id=%s", (product.store_id,)) == [{"username": loser_name, "quantity": 1}]
     finally:
-        seller.session.close()
         for client in clients:
             client.session.close()
 

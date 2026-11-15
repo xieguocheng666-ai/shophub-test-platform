@@ -5,11 +5,14 @@
 数据存 MySQL（server/db.py 数据访问层），接口/UI 都测它。
 平台模式：一个商家可开多店，商品价格库存挂店铺（store_product），订单按店铺拆成父订单+子订单。
 """
+import logging
 import os
+import re
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 import jwt
 from anyio import to_thread
@@ -34,6 +37,67 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="My Shop API", version="0.5.0", lifespan=lifespan)
+
+class RequestDiagnosticsMiddleware:
+    """仅记录请求标识、路由模板、状态和耗时；不记录正文、查询或鉴权。"""
+
+    def __init__(self, app):
+        self.app = app
+        self.logger = logging.getLogger("server.requests")
+        # Uvicorn 默认仅配置自己的 logger，root 仍为 WARNING；显式提供安全日志出口。
+        self.logger.setLevel(logging.INFO)
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter("%(levelname)s %(name)s %(message)s"))
+            self.logger.addHandler(handler)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        incoming = next((v.decode("latin1") for k, v in scope.get("headers", []) if k.lower() == b"x-request-id"), "")
+        request_id = incoming if re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", incoming) else uuid4().hex
+        started = time.monotonic()
+        status = 500
+        response_started = False
+
+        async def correlated_send(message):
+            nonlocal status, response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+                status = message["status"]
+                headers = [(k, v) for k, v in message.get("headers", []) if k.lower() not in (b"x-request-id", b"x-test-run-id")]
+                headers.append((b"x-request-id", request_id.encode("ascii")))
+                run_id = os.getenv("TEST_RUN_ID", "")
+                if re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", run_id):
+                    headers.append((b"x-test-run-id", run_id.encode("ascii")))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        try:
+            await self.app(scope, receive, correlated_send)
+        except Exception:
+            # 未处理异常的默认 500 也带关联头；随后重抛原异常交给服务器记录。
+            if not response_started:
+                try:
+                    await correlated_send({"type": "http.response.start", "status": 500,
+                                           "headers": [(b"content-type", b"text/plain; charset=utf-8")]})
+                    await correlated_send({"type": "http.response.body", "body": b"Internal Server Error"})
+                except Exception:
+                    pass
+            raise
+        finally:
+            try:
+                route = scope.get("route")
+                # 路由模板不会暴露实际路径参数；未知路径不原样输出。
+                path = getattr(route, "path", "[unmatched]")
+                self.logger.info("request_id=%s method=%s path=%s status=%s elapsed_ms=%.3f",
+                                 request_id, scope["method"], path, status,
+                                 (time.monotonic() - started) * 1000)
+            except Exception:
+                pass
+
+
+app.add_middleware(RequestDiagnosticsMiddleware)
 
 # ---------- 配置 ----------
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me-not-for-prod")

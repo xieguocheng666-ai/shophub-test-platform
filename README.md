@@ -17,12 +17,14 @@ ShopHub 是个人测试练习项目：围绕模拟商城建立接口、网页和
 - `ui/`：Playwright网页测试，页面对象封装页面操作，用例判断结果。
 - `perf/`：Locust性能脚本、历史数据及核对报告。
 - `docs/`：当前状态、路线、设计、业务参考与验收记录。
+- `test_support/`：生成测试参数、准备业务状态、清理本例数据和记录失败诊断。
+- `tools/run_tests.py`：每轮创建专用库与服务，执行并保存结果，再释放环境。
 
 模块关系、关键机制和当前结构限制统一见 [架构说明](docs/架构说明.md)。
 
 ## 本地运行（Windows PowerShell）
 
-接口和网页测试会在每例前清表并重播种子，只能指向可丢弃的专用测试环境，不与压测或其他测试共享库。使用单个服务进程，确保进程内的模拟支付模式一致。
+推荐使用下面的执行入口。它读取`.env`中的MySQL连接信息，为每轮创建唯一数据库和本机服务，执行结束后清理；账号需要建库、删库权限。测试仍顺序运行，使用单服务进程。
 
 ```powershell
 # 项目根目录：创建虚拟环境并安装依赖
@@ -34,19 +36,39 @@ python -m venv .venv
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-初始化前先确认目标 MySQL 实例和库只用于本项目测试。`init_db()` 仍硬编码创建 `shop`：下面的初始化命令仅用于专用实例且 `DB_NAME=shop` 的情形。若使用其他库名，必须预建目标库并应用 `server/db.py` 的 DDL（建表语句）和种子，不能以为改 `DB_NAME` 就会自动建新库。11-09验收使用的是另外预建的隔离库。
-
 ```powershell
-# 终端1：环境信息已确认后初始化；先导入 main 以加载项目 .env
-$env:DB_NAME = 'shop'
-$env:DEBUG_MODE = '1'
-.\.venv\Scripts\python.exe -c "from server import main; main.db.init_db()"
-.\.venv\Scripts\python.exe -m uvicorn server.main:app --port 8000
+# 无需MySQL的单元测试
+.\.venv\Scripts\python.exe -m tools.run_tests --suite unit -- -q
+
+# 真实接口回归：MySQL需已启动，不用手动启动商城
+.\.venv\Scripts\python.exe -m tools.run_tests --suite api -- -q
+
+# 完整单元、接口与网页回归
+.\.venv\Scripts\python.exe -m tools.run_tests --suite all -- -q --browser chromium
+
+# 只选择已经迁移为本例数据管理的用例
+.\.venv\Scripts\python.exe -m tools.run_tests --suite api -- -m owned_data -q
 ```
 
+`--`之后是传给pytest的参数，`-k`按名称筛选、`-m`按标记筛选。执行器始终加入所选套件目录，额外传文件路径不会取代整个套件。`--run-id`可指定一次运行的编号；已有同名结果目录会被拒绝覆盖。
+
+结果位于`reports/engineering/<运行编号>/`：`summary.json`记录版本、退出码和准备/执行/清理耗时，`junit.xml`是供工具读取的测试结果，`service.log`是服务日志，`diagnostics/`保存失败用例的脱敏请求及阶段。网页失败另存截图与操作轨迹。失败诊断中的请求标识`X-Request-ID`可用于查找服务日志中的同一次请求。
+
+例如接口返回错误时，先看summary的失败阶段，再从diagnostics找请求标识，在service.log中搜索该标识；不要直接把含真实密码的`.env`附进报告。
+
+### 手动启动（需要自己管理环境时）
+
+旧接口/网页用例会清空全库并重播种子；只能连接可丢弃的专用库。`owned_data`标记仅对已迁移用例跳过重置，不表示全套可共享库并行。
+
 ```powershell
-# 终端2：使用与服务相同的专用数据库配置
-$env:DB_NAME = 'shop'
+# 终端1：先确认该库可丢弃；初始化已支持DB_NAME，不再硬编码shop
+$env:DB_NAME = 'shophub_manual_test'
+$env:DEBUG_MODE = '1'
+.\.venv\Scripts\python.exe -c "from server import main; main.db.init_db()"
+.\.venv\Scripts\python.exe -m uvicorn server.main:app --port 8000 --no-access-log
+
+# 终端2：同一数据库配置，测试结束后自行停止服务和管理库
+$env:DB_NAME = 'shophub_manual_test'
 $env:BASE_URL = 'http://127.0.0.1:8000'
 .\.venv\Scripts\python.exe -m pytest
 
@@ -63,7 +85,9 @@ allure serve reports
 docker compose up --build --abort-on-container-exit --exit-code-from test
 ```
 
-该命令按 Compose 配置启动5个服务，以 test 的退出码作为结果。Compose 使用本地演示凭据；不能把它当生产部署方案。流水线在推送到 main/master 或收到拉取请求时配置构建、测试和失败产物上传；本文不宣称已验证远程运行。
+该命令按Compose配置启动5个服务，以test的退出码作为结果；使用本地演示凭据。本轮未运行Compose。
+
+GitHub Actions的持续集成（CI /ˌsiː ˈaɪ/，代码变更后自动检查）先跑单元，再使用MySQL服务运行完整套件，始终上传执行目录，保留14天。触发包括main/master/improve-test-design推送、拉取请求和手动执行。流水线复用上述执行器；配置存在不代表远程运行通过。MySQL 8认证依赖按[PyMySQL官方说明](https://pymysql.readthedocs.io/en/latest/user/installation.html)声明`PyMySQL[rsa]`。
 
 ## 测试数量与证据
 
@@ -82,5 +106,6 @@ docker compose up --build --abort-on-container-exit --exit-code-from test
 - [数据库结构](docs/database-structure.md)：8张表、父子订单和数据变化示例。
 - [需求草案](docs/requirements.md)：实现后补写、尚待本人逐条确认，不是企业需求评审记录。
 - [质量验收](docs/quality-review-2026-11-09.md)：修复和运行证据、个人参与边界。
+- [E1工程升级验收](docs/quality-review-2026-11-12.md)：本轮数据、诊断、环境及回归证据。
 - [历史压测核对](perf/report.md)：原始数据、错误原因边界和同负载比较；请求速率与成功订单吞吐分开解释。
 - [性能复验方案](PERF_TEST_PLAN.md)：如何保留版本、环境、错误与同负载对照。

@@ -9,6 +9,7 @@ FastAPI 同步 handler 在线程池执行，不跨请求共享正在使用的连
 import hashlib
 import os
 import secrets
+import re
 
 import pymysql
 from dbutils.pooled_db import PooledDB
@@ -181,6 +182,9 @@ def verify_password(password: str, stored: str) -> bool:
 # ---------- 建库建表 + 种子 ----------
 def init_db():
     """建库（无库连接）→ 建表 → 插种子。幂等，可重复执行。"""
+    name = os.getenv("DB_NAME", "shop")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", name):
+        raise ValueError("DB_NAME must be an ASCII SQL identifier (1-64 characters)")
     conn = pymysql.connect(
         host=os.getenv("DB_HOST", "127.0.0.1"),
         port=int(os.getenv("DB_PORT", "3306")),
@@ -191,7 +195,7 @@ def init_db():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "CREATE DATABASE IF NOT EXISTS shop "
+                f"CREATE DATABASE IF NOT EXISTS `{name}` "
                 "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             )
         conn.commit()

@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 from api.api_client import ApiClient
 from api.common import db_util
 
+pytest_plugins = ["test_support.pytest_plugin"]
+
 ROOT_DIR = Path(__file__).resolve().parent
 
 load_dotenv(ROOT_DIR / ".env")
@@ -44,14 +46,27 @@ def base_url(config):
 @pytest.fixture()
 def api_client(base_url):
     """每个测试独立的客户端，token 互不串扰。"""
-    return ApiClient(base_url)
+    client = ApiClient(base_url)
+    yield client
+    client.session.close()
 
 
 @pytest.fixture(autouse=True)
-def reset_data(api_client):
+def reset_data(api_client, request):
     """每个测试前重置被测系统数据，保证测试隔离（库存/购物车/订单/支付模式）。"""
+    if request.node.get_closest_marker("owned_data"):
+        return
     resp = api_client.reset()
     assert resp.status_code == 200, resp.text
+
+
+@pytest.fixture()
+def scenario(base_url, db):
+    """创建本例资源；失败时调用阶段报告先写证据，再按资源归属清理。"""
+    from test_support.scenarios import TestData
+
+    with TestData(base_url, db) as data:
+        yield data
 
 
 @pytest.fixture()

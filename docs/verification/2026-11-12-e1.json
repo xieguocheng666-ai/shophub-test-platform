@@ -1,0 +1,434 @@
+{
+  "date": "2026-11-12",
+  "environment": "Windows; Python 3.11; local MySQL 8.0.43; Chromium",
+  "scope": "E1 local acceptance, uncommitted worktree on pushed baseline 09527761",
+  "raw_artifacts": "Local reports/engineering only; ignored by Git; hashes do not restore missing files",
+  "runs": {
+    "e1-data-first": {
+      "run_id": "e1-data-first",
+      "suite": "api",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.5,
+        "execute": 34.71800000034273,
+        "cleanup": 0.125
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-data-first/junit.xml",
+        "service": "reports/engineering/e1-data-first/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_534f06421faf456a980d31c3d64aadee",
+      "counts": {
+        "tests": 72,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "api": 72
+      },
+      "junit_sha256": "654034fa248cdfff5f732cd1a059175d4b7f5407f7b0c6763ff38be0a233b5c6",
+      "database_absent_after_run": true
+    },
+    "e1-expected-failure": {
+      "run_id": "e1-expected-failure",
+      "suite": "api",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 1,
+      "pytest_exitcode": 1,
+      "timings": {
+        "prepare": 2.2809999994933605,
+        "execute": 1.7340000001713634,
+        "cleanup": 0.07899999991059303
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-expected-failure/junit.xml",
+        "service": "reports/engineering/e1-expected-failure/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_021ba9c2c3254f668d141883626ef957",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "reports": 1
+      },
+      "junit_sha256": "77dd734edaf65936e88c0f15ab1a754004e1ca547c744ad9c81bf358db9290d6",
+      "database_absent_after_run": true
+    },
+    "e1-full-final": {
+      "run_id": "e1-full-final",
+      "suite": "all",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.343999999575317,
+        "execute": 44.01600000075996,
+        "cleanup": 0.13999999966472387
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-full-final/junit.xml",
+        "service": "reports/engineering/e1-full-final/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_ed3de5b2a3364e64854ed177c070132a",
+      "counts": {
+        "tests": 155,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "unit": 76,
+        "api": 74,
+        "ui": 5
+      },
+      "junit_sha256": "392837398b6d6d18802827d5db46df0344d33c140a612521e08a3b7e178e0053",
+      "database_absent_after_run": true
+    },
+    "e1-full-first": {
+      "run_id": "e1-full-first",
+      "suite": "all",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.281000000424683,
+        "execute": 48.17200000025332,
+        "cleanup": 0.07799999974668026
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-full-first/junit.xml",
+        "service": "reports/engineering/e1-full-first/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_819f2d0a33d14ceca05cc346f93116e6",
+      "counts": {
+        "tests": 152,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "unit": 73,
+        "api": 74,
+        "ui": 5
+      },
+      "junit_sha256": "41c07bdf51f589e585594b7ebad17a9fa12cdbaacd2256f51103cd2ad34d367d",
+      "database_absent_after_run": true
+    },
+    "e1-owned-repeat": {
+      "run_id": "e1-owned-repeat",
+      "suite": "api",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.3279999997466803,
+        "execute": 6.985000000335276,
+        "cleanup": 0.07799999974668026
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-owned-repeat/junit.xml",
+        "service": "reports/engineering/e1-owned-repeat/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_a1720805b2e349cea83259758f92ab62",
+      "counts": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "api": 20
+      },
+      "junit_sha256": "85256a23a1091b21288835aa19aa0f469793cd92f0154a7e89a2fdc2a4ceb272",
+      "database_absent_after_run": true
+    },
+    "e1-owned-reverse": {
+      "run_id": "e1-owned-reverse",
+      "suite": "api",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.281000000424683,
+        "execute": 4.233999999240041,
+        "cleanup": 0.07800000067800283
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-owned-reverse/junit.xml",
+        "service": "reports/engineering/e1-owned-reverse/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_656ad42094224a75a2a88798768d237b",
+      "counts": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "api": 10
+      },
+      "junit_sha256": "7c571a52b08b7eeae5e4e20a368e29850e1ffd33da85dcb682fafb7e47f86b54",
+      "database_absent_after_run": true
+    },
+    "e1-ownership-green": {
+      "run_id": "e1-ownership-green",
+      "suite": "api",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.2349999994039536,
+        "execute": 1.7180000003427267,
+        "cleanup": 0.07899999991059303
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-ownership-green/junit.xml",
+        "service": "reports/engineering/e1-ownership-green/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_42ccc76fd12245ee82d5c8a214161226",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "api": 2
+      },
+      "junit_sha256": "cf88fb0f22745314ef845b17c70bc42e5aa73e376d34252bc2b7dac924b0510e",
+      "database_absent_after_run": true
+    },
+    "e1-ownership-red": {
+      "run_id": "e1-ownership-red",
+      "suite": "api",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 1,
+      "pytest_exitcode": 1,
+      "timings": {
+        "prepare": 2.358999999240041,
+        "execute": 1.9530000006780028,
+        "cleanup": 0.14099999982863665
+      },
+      "cleanup": {
+        "service": "stopped",
+        "database": "removed"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-ownership-red/junit.xml",
+        "service": "reports/engineering/e1-ownership-red/service.log"
+      },
+      "errors": [],
+      "database": "shophub_test_ad74c9dd5de94908a844bf18d33756e6",
+      "counts": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "api": 2
+      },
+      "junit_sha256": "9a96528e15fced11c0af20c20aba198d0c16c01bf077d3aea02173e62a4fd23f",
+      "database_absent_after_run": true
+    },
+    "e1-runner-unit": {
+      "run_id": "e1-runner-unit",
+      "suite": "unit",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 0.0,
+        "execute": 2.296000000089407,
+        "cleanup": 0.0
+      },
+      "cleanup": {
+        "service": "not_started",
+        "database": "not_created"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-runner-unit/junit.xml",
+        "service": "reports/engineering/e1-runner-unit/service.log"
+      },
+      "errors": [],
+      "counts": {
+        "tests": 64,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "unit": 64
+      },
+      "junit_sha256": "320fa4a59383ae300cbb683e466a0edceb2a7698759e9cd25cc54694e38462fa",
+      "database_absent_after_run": false
+    },
+    "e1-runner-unit-final": {
+      "run_id": "e1-runner-unit-final",
+      "suite": "unit",
+      "version": {
+        "commit": "09527761f85b7406ff6e253053dade03c4632df0",
+        "dirty": true
+      },
+      "exitcode": 1,
+      "pytest_exitcode": 1,
+      "timings": {
+        "prepare": 0.0,
+        "execute": 2.921999999321997,
+        "cleanup": 0.0
+      },
+      "cleanup": {
+        "service": "not_started",
+        "database": "not_created"
+      },
+      "reports": {
+        "junit": "reports/engineering/e1-runner-unit-final/junit.xml",
+        "service": "reports/engineering/e1-runner-unit-final/service.log"
+      },
+      "errors": [],
+      "counts": {
+        "tests": 67,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "breakdown": {
+        "unit": 67
+      },
+      "junit_sha256": "9af3a9bd8765187748cf998da2c7ac75831e51c9c06dae52ac81bac959bba716",
+      "database_absent_after_run": false
+    }
+  },
+  "owned_service_pids_checked_absent": [
+    11700,
+    32704,
+    62616,
+    64648,
+    73424,
+    75488,
+    84128,
+    87072
+  ],
+  "failure_probe": {
+    "request_count": 7,
+    "all_request_ids_in_service_log": true,
+    "authorization_and_login_token_redacted": true,
+    "phases": [
+      {
+        "phase": "setup",
+        "outcome": "passed",
+        "error": null
+      },
+      {
+        "phase": "call",
+        "outcome": "failed",
+        "error": "AssertionError"
+      },
+      {
+        "phase": "teardown",
+        "outcome": "passed",
+        "error": null
+      }
+    ]
+  },
+  "source_sha256": {
+    ".github/workflows/ci.yml": "fd1653d75d63addbf959900d3cf25f95a7d773413a413ff798fa59c4a9f294ab",
+    "api/api_client.py": "6215f2ad817f3e7b140f2652738c9b88bd9be2f90edf5619eab11145ed698c8a",
+    "api/tests/test_concurrency.py": "8408264e11b1613532bcb66a00a4b5fad4159ef3a66590f985bd328bff1ef19d",
+    "api/tests/test_engineering_data.py": "69457e9a1cda906ac04fbe22ba041134704b11114f9dfb52cd452d945ae0822e",
+    "api/tests/test_quality_regressions.py": "a29e6dbabb246d70a1c3fb9bfaa3acc994d2535c79a12baa9aac56afe5b14f67",
+    "conftest.py": "06c36393d09ca4e4a9148749e5183cf04bd05bd121141b70aea408cef2a639ac",
+    "pytest.ini": "328e892e47a5f09a94529764c1846dd9cea68178b439356381f3cc3c06b21074",
+    "requirements.txt": "24f66f2a70f62d86ea4d00ef73678f47d6809d5cbaf2beed50aba2e63a24f8b2",
+    "server/db.py": "e5192c8caee886f9d99aa188582766739e5ad89bd999cd4c0ce5bb3fea53e0e2",
+    "server/main.py": "e9ef49a7f131b4f5a73b3621bd0874c55930f6f51fbc8f5eb6bd3d4937f7dc15",
+    "test_support/__init__.py": "f9593543690442dd916646cb0a1f36fbde100e2091c6ed17345dafaa90b8ed25",
+    "test_support/diagnostics.py": "eb402f8c7f8ff6dc14e9ce549052ae85b7ac7a415573bd9039e5ef3b92d58972",
+    "test_support/factories.py": "a169d54d0cf3945470814c29515a9ab53825198df5aaf30d0dfbd6b53382533b",
+    "test_support/pytest_plugin.py": "add988d6697bc07b22d125e21af7ba60dcffed369527d3b14c8c702af34e6a33",
+    "test_support/scenarios.py": "2aa893c44dc5d0c9588c4dd5947b5e5197d502b8297b9c9d7d02eb394a91928e",
+    "tools/__init__.py": "0f213accbba98a5ebbc202ab212fd8b61d8f39713dc29f46d0b4174abf056f30",
+    "tools/run_tests.py": "8734c22239a7a39c0527c03381fda341cc2abce2898393be89c54471fae9a58b",
+    "unit/test_data_factories.py": "8d088dda7e186c6643d9485ec9a95c7ec5eb18b3abcabc3abdec0cbf7374d159",
+    "unit/test_database_init.py": "0c8a5d348d0013e3c08f788ef71ae266f70998b62f746b6c3f96204a5b62cf6c",
+    "unit/test_diagnostics.py": "89124ebcd79d2c5d4188a1265724663e8c7d4e63ee02d809d09c2aca95a6143e",
+    "unit/test_failure_reporting.py": "64870c4843a5e3744129045a9fd28dccd6723363cccb3dae2ea4312bf060e20c",
+    "unit/test_runner.py": "47303fadb4358971f2f2e8eae486ad22ce07005aac0c15b7ea4f678830583801",
+    "unit/test_scenario_contract.py": "90f769d0ac08f91ded277783e0b4f35bfc1a48884ecfc13fcf79097d03ed4da7"
+  },
+  "not_verified": [
+    "GitHub Actions remote run",
+    "Docker Compose",
+    "real Celery delivery",
+    "parallel suite execution",
+    "performance experiments"
+  ]
+}

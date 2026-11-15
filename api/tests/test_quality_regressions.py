@@ -66,22 +66,21 @@ def test_zero_price_and_stock_are_accepted(api_client, config, db):
     assert_ok(api_client.update_stock(1, product_id, 0))
 
 
-def test_cart_isolated_between_users(api_client, config, db):
-    _login(api_client, config, "alice")
-    assert_ok(api_client.cart_add(1, 2, 2))
-    _login(api_client, config, "bob")
-    response = api_client.cart_get()
+@pytest.mark.owned_data
+def test_cart_isolated_between_users(scenario, db):
+    alice, bob = scenario.buyer(), scenario.buyer()
+    product = scenario.product(scenario.seller(), stock=100)
+    assert_ok(alice.client.cart_add(product.store_id, product.product_id, 2))
+    response = bob.client.cart_get()
     assert_ok(response)
     assert response.json()["items"] == []
-    assert_ok(api_client.cart_add(1, 2, 1))
-    assert [item["quantity"] for item in api_client.cart_get().json()["items"]] == [1]
-    _login(api_client, config, "alice")
-    assert [item["quantity"] for item in api_client.cart_get().json()["items"]] == [2]
-    assert_ok(api_client.cart_remove(1, 2))
-    _login(api_client, config, "bob")
-    assert [item["quantity"] for item in api_client.cart_get().json()["items"]] == [1]
-    assert db.all("SELECT username, quantity FROM carts ORDER BY username") == [{"username": "bob", "quantity": 1}]
-    assert db.scalar("SELECT stock FROM store_product WHERE store_id=1 AND product_id=2") == 100
+    assert_ok(bob.client.cart_add(product.store_id, product.product_id, 1))
+    assert [item["quantity"] for item in bob.client.cart_get().json()["items"]] == [1]
+    assert [item["quantity"] for item in alice.client.cart_get().json()["items"]] == [2]
+    assert_ok(alice.client.cart_remove(product.store_id, product.product_id))
+    assert [item["quantity"] for item in bob.client.cart_get().json()["items"]] == [1]
+    assert db.all("SELECT username,quantity FROM carts WHERE store_id=%s", (product.store_id,)) == [{"username": bob.username, "quantity": 1}]
+    assert db.scalar("SELECT stock FROM store_product WHERE store_id=%s AND product_id=%s", (product.store_id, product.product_id)) == 100
 
 
 def test_confirm_other_buyers_shipped_order_has_no_side_effect(api_client, config, db):

@@ -7,8 +7,11 @@ ApiClient 通过多重继承聚合它们，测试里仍用统一的 api_client.x
 """
 import logging
 import time
+from uuid import uuid4
 
 import requests
+
+from test_support import diagnostics
 
 from api.clients.auth import AuthMixin
 from api.clients.cart import CartMixin
@@ -39,16 +42,58 @@ class ApiClient(AuthMixin, ProductMixin, CartMixin, OrderMixin, StoreMixin, Debu
         url = f"{self.base_url}{path}"
         kwargs.setdefault("timeout", self.timeout)
         retries = self.retry if method.upper() in {"GET", "HEAD"} else 0
+        # 捕获共享用例对象，线程中的请求也能归属当前顺序用例。
+        try:
+            case = diagnostics.get_case()
+        except Exception:
+            case = None
         for attempt in range(retries + 1):
+            request_id = uuid4().hex
+            headers = requests.structures.CaseInsensitiveDict(kwargs.get("headers") or {})
+            headers["X-Request-ID"] = request_id
+            kwargs["headers"] = headers
+            started = time.monotonic()
+            resp = None
+            error = None
             try:
                 resp = self.session.request(method, url, **kwargs)
-                logger.info("[%s] %s -> %s", method.upper(), url, resp.status_code)
+                try:
+                    logger.info("request_id=%s method=%s status=%s elapsed_ms=%.3f",
+                                request_id, method.upper(), resp.status_code,
+                                (time.monotonic() - started) * 1000)
+                except Exception:
+                    pass
                 return resp
-            except (requests.ConnectionError, requests.Timeout) as exc:
-                if attempt == retries:
+            except Exception as exc:
+                error = type(exc).__name__
+                if not isinstance(exc, (requests.ConnectionError, requests.Timeout)) or attempt == retries:
                     raise
-                logger.warning("请求失败，第 %d 次重试: %s", attempt + 1, exc)
+                try:
+                    logger.warning("request_id=%s retry=%d error=%s", request_id, attempt + 1, error)
+                except Exception:
+                    pass
                 time.sleep(1)
+            finally:
+                try:
+                    if kwargs.get("stream"):
+                        body = "[streaming response omitted]"
+                    elif resp is not None:
+                        try:
+                            body = resp.json()
+                        except (ValueError, TypeError):
+                            body = "[non-JSON response omitted]"
+                    else:
+                        body = None
+                    diagnostics.record_request({
+                        "request_id": request_id, "method": method.upper(),
+                        "url": diagnostics.safe_url(url), "params": diagnostics.safe_params(kwargs.get("params")),
+                        "headers": dict(headers), "request": kwargs.get("json", "[non-JSON body omitted]"),
+                        "status": resp.status_code if resp is not None else None,
+                        "response": body, "error": error,
+                        "elapsed_ms": round((time.monotonic() - started) * 1000, 3),
+                    }, case=case)
+                except Exception:
+                    pass
 
     def _headers(self):
         if self.token:
