@@ -2,6 +2,7 @@
 import os
 import re
 import socket
+import secrets
 import subprocess
 import sys
 import time
@@ -70,9 +71,16 @@ def drop_database(env):
 
 
 def free_port():
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1', 0))
-        return sock.getsockname()[1]
+    # Chromium限制5060/5061等端口；不依赖操作系统bind(0)分配范围。
+    # 依据：chromium/src/net/base/port_util.cc，2026-11-15核查。
+    for _ in range(100):
+        with socket.socket() as sock:
+            try:
+                sock.bind(('127.0.0.1', 49152 + secrets.randbelow(16384)))
+                return sock.getsockname()[1]
+            except OSError:
+                continue
+    raise RunnerError('No available browser-safe port after 100 attempts')
 
 
 def stop_process(process):
