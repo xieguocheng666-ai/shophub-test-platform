@@ -91,3 +91,7 @@ def test_e1_failure_probe(scenario, db):
 ## 2026-11-15提交前复核
 
 用户授权推送本轮升级。23份代码/配置指纹与本记录验收版本一致；执行`.venv/Scripts/python.exe -m pytest unit -q -o addopts=''`，76条通过（5.91秒）；git diff --check通过。本次提交前未重跑真实接口/网页，11-12的155条结果仍标为历史验收。推送及远程流水线最新状态见[项目状态](项目状态.md)。
+
+11-15推送完成：功能提交`990f34f2bb16fd306eefd9772a483ea903b83296`，分支improve-test-design，远端一致。[GitHub运行43687737688](https://github.com/xieguocheng666-ai/shophub-test-platform/actions/runs/43687737688)的unit与integration均success。单元76条通过；已下载完整集成产物并核对JUnit为155条、失败/错误/跳过均0，执行器exitcode=0，service=stopped、database=removed。远程工作区dirty=false，提交与功能提交一致。原始产物integration-results与unit-results上传成功，GitHub到期时间分别为2026-11-29 06:59:12 UTC、06:57:35 UTC；下载副本保留在本机被忽略的reports/engineering/github-e1-43687737688。
+
+后续仅同步状态文档的提交使用`[skip ci]`跳过重复执行；以上CI证据对应功能提交990f34f，不伪称文档提交单独跑过测试。本轮仍未运行Compose、真实Celery、多用例并行或性能实验。
