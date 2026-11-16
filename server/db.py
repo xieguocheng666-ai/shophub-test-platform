@@ -140,11 +140,15 @@ def _get_pool():
     """
     global _POOL
     if _POOL is None:
+        minimum = int(os.getenv("DB_POOL_MIN", "10"))
+        maximum = int(os.getenv("DB_POOL_MAX", "150"))
+        if not 0 <= minimum <= maximum or maximum < 1:
+            raise ValueError("连接池需要 0 <= DB_POOL_MIN <= DB_POOL_MAX，且上限为正数")
         _POOL = PooledDB(
             creator=pymysql,
-            maxconnections=150,
-            mincached=10,
-            maxcached=150,
+            maxconnections=maximum,
+            mincached=minimum,
+            maxcached=maximum,
             blocking=True,
             ping=1,
             reset=True,

@@ -182,10 +182,12 @@ def asgi_get(path="/health", headers=None):
 
 def test_middleware_correlates_and_logs_without_query_or_body(monkeypatch, caplog):
     monkeypatch.setenv("TEST_RUN_ID", "run-unit")
+    monkeypatch.setenv("TEST_ENVIRONMENT_ID", "environment-unit")
     with caplog.at_level(logging.INFO, logger="server.requests"):
         response = asgi_get("/health?password=private-query", headers={"X-Request-ID": "known-request", "Authorization": "Bearer private-auth"})
     assert response.headers["x-request-id"] == "known-request"
     assert response.headers["x-test-run-id"] == "run-unit"
+    assert response.headers["x-test-environment-id"] == "environment-unit"
     assert "known-request" in caplog.text and "200" in caplog.text
     assert "private-" not in caplog.text
 

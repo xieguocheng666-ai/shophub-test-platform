@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
+from threading import Lock
 
 import jwt
 from anyio import to_thread
@@ -70,6 +71,9 @@ class RequestDiagnosticsMiddleware:
                 run_id = os.getenv("TEST_RUN_ID", "")
                 if re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", run_id):
                     headers.append((b"x-test-run-id", run_id.encode("ascii")))
+                environment_id = os.getenv("TEST_ENVIRONMENT_ID", "")
+                if re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", environment_id):
+                    headers.append((b"x-test-environment-id", environment_id.encode("ascii")))
                 message = {**message, "headers": headers}
             await send(message)
 
@@ -90,8 +94,8 @@ class RequestDiagnosticsMiddleware:
                 route = scope.get("route")
                 # 路由模板不会暴露实际路径参数；未知路径不原样输出。
                 path = getattr(route, "path", "[unmatched]")
-                self.logger.info("request_id=%s method=%s path=%s status=%s elapsed_ms=%.3f",
-                                 request_id, scope["method"], path, status,
+                self.logger.info("run=%s environment=%s request_id=%s method=%s path=%s status=%s elapsed_ms=%.3f",
+                                 os.getenv("TEST_RUN_ID", ""), os.getenv("TEST_ENVIRONMENT_ID", ""), request_id, scope["method"], path, status,
                                  (time.monotonic() - started) * 1000)
             except Exception:
                 pass
@@ -107,6 +111,36 @@ TOKEN_EXPIRE_MINUTES = 30
 # 支付网关行为（success / fail / timeout），仅 DEBUG_MODE=1 时可切换
 PAYMENT_MODE = "success"
 PAYMENT_TIMEOUT_SLEEP = 6  # timeout 模式挂起秒数，需大于客户端超时
+_payment_lock = Lock()
+_payment_in_flight = 0
+
+
+def payment_state():
+    with _payment_lock:
+        return {"in_flight": _payment_in_flight, "payment_mode": PAYMENT_MODE}
+
+
+class PaymentLifecycleMiddleware:
+    """收到支付HTTP请求即登记，覆盖鉴权/线程池排队和完整处理阶段。"""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if (scope['type'] != 'http' or scope['method'] != 'POST'
+                or not re.fullmatch(r'/order/[^/]+/pay', scope['path'])):
+            return await self.app(scope, receive, send)
+        global _payment_in_flight
+        with _payment_lock:
+            _payment_in_flight += 1
+        try:
+            return await self.app(scope, receive, send)
+        finally:
+            with _payment_lock:
+                _payment_in_flight -= 1
+
+
+app.add_middleware(PaymentLifecycleMiddleware)
 
 # ---------- 订单状态机 ----------
 PENDING, PAID, SHIPPED, COMPLETED, CANCELED = (
@@ -187,7 +221,11 @@ def _check_store_owner(store_id: int, user: str) -> dict:
 # ---------- 健康检查 ----------
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    result = {"status": "ok"}
+    if os.getenv("TEST_ENVIRONMENT_ID"):
+        result.update(environment_id=os.environ["TEST_ENVIRONMENT_ID"],
+                      database=os.getenv("DB_NAME", "shop"))
+    return result
 
 
 # ---------- 认证 ----------
@@ -347,6 +385,8 @@ def update_stock(
 
 # ---------- 故障注入开关（仅 DEBUG 环境启用） ----------
 if os.getenv("DEBUG_MODE") == "1":
+
+    app.get("/debug/payment-state")(payment_state)
 
     class PaymentModeRequest(BaseModel):
         mode: str

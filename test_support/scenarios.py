@@ -1,6 +1,10 @@
 """本例资源的创建、真实业务状态准备与按归属清理。"""
+import os
+from pathlib import Path
+
 from dataclasses import dataclass
 from decimal import Decimal
+import time
 
 from api.api_client import ApiClient
 from server.db import hash_password
@@ -11,6 +15,18 @@ def _json_ok(response):
     if response.status_code != 200:
         raise AssertionError(f"测试准备接口失败：HTTP {response.status_code}")
     return response.json()
+
+
+def wait_until(observe, *, timeout=3, interval=0.05):
+    """有截止时间地观察前置条件；observe 只能读取，不能重发业务写请求。"""
+    deadline = time.monotonic() + timeout
+    while True:
+        if observe():
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise AssertionError("测试准备业务状态未就绪（等待截止）")
+        time.sleep(min(interval, remaining))
 
 
 @dataclass
@@ -129,15 +145,33 @@ class TestData:
         data = _json_ok(buyer.client.order_create())
         order = Order(data["order_id"], tuple(data["sub_orders"]), buyer)
         if state != "pending":
-            _json_ok(buyer.client.order_pay(order.order_id))
+            payment = _json_ok(buyer.client.order_pay(order.order_id))
+            if payment.get("status") != "paid":
+                raise AssertionError("测试准备支付业务失败：未获得paid状态")
+            self._wait_order_state(order, "paid", "paid")
         if state in {"shipped", "completed"}:
             sellers = {product.store_id: product.seller for product, _ in items}
             for sub in order.sub_orders:
                 _json_ok(sellers[sub["store_id"]].client.sub_order_ship(sub["sub_order_id"]))
+            self._wait_order_state(order, "paid", "shipped")
         if state == "completed":
             for sub in order.sub_orders:
                 _json_ok(buyer.client.sub_order_confirm(sub["sub_order_id"]))
+            self._wait_order_state(order, "completed", "completed")
+        if state == "pending":
+            self._wait_order_state(order, "pending", "pending")
         return order
+
+    def _wait_order_state(self, order, parent_state, child_state):
+        def ready():
+            parent = self.db.scalar("SELECT status FROM orders WHERE order_id=%s AND username=%s",
+                                    (order.order_id, order.buyer.username))
+            children = self.db.all("SELECT sub_order_id,status FROM sub_orders WHERE parent_order_id=%s",
+                                   (order.order_id,))
+            return (parent == parent_state and len(children) == len(order.sub_orders)
+                    and {row['sub_order_id'] for row in children} == {row['sub_order_id'] for row in order.sub_orders}
+                    and all(row['status'] == child_state for row in children))
+        wait_until(ready)
 
     def cleanup(self):
         if self._closed:
@@ -147,6 +181,15 @@ class TestData:
             if names:
                 self._delete_owned(names)
             self._closed = True
+        except BaseException:
+            marker = os.getenv("TEST_FATAL_FILE")
+            if marker:
+                # 不记录原始驱动异常，避免凭据进入共享停止标记。
+                try:
+                    Path(marker).write_text("scenario cleanup failed", encoding="utf-8")
+                except OSError:
+                    pass  # 原始清理失败必须保留。
+            raise
         finally:
             for account in self._accounts:
                 account.client.session.close()

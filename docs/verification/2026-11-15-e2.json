@@ -1,0 +1,2879 @@
+{
+  "date": "2026-11-15",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "baseline": "dbe9c2c",
+  "dirty": true,
+  "business_baseline": [
+    "api/tests/test_auth.py::test_health",
+    "api/tests/test_auth.py::test_login[\\u5408\\u6cd5\\u767b\\u5f55]",
+    "api/tests/test_auth.py::test_login[\\u5bc6\\u7801\\u9519\\u8bef]",
+    "api/tests/test_auth.py::test_login[\\u7528\\u6237\\u4e0d\\u5b58\\u5728]",
+    "api/tests/test_auth.py::test_me_with_expired_token",
+    "api/tests/test_auth.py::test_me_with_forged_token",
+    "api/tests/test_auth.py::test_me_with_valid_token",
+    "api/tests/test_auth.py::test_me_with_wrong_signature",
+    "api/tests/test_auth.py::test_me_without_token",
+    "api/tests/test_auth.py::test_password_stored_hashed",
+    "api/tests/test_auth.py::test_search_products[\\u5339\\u914d\\u5355\\u4e2a]",
+    "api/tests/test_auth.py::test_search_products[\\u5339\\u914d\\u591a\\u4e2a]",
+    "api/tests/test_auth.py::test_search_products[\\u65e0\\u7ed3\\u679c]",
+    "api/tests/test_auth.py::test_search_products[\\u7a7a\\u5173\\u952e\\u8bcd]",
+    "api/tests/test_cart.py::test_cart_accumulated_quantity[39-200-99]",
+    "api/tests/test_cart.py::test_cart_accumulated_quantity[40-200-100]",
+    "api/tests/test_cart.py::test_cart_accumulated_quantity[41-400-60]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u5546\\u54c1\\u4e0d\\u5b58\\u5728]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u5e93\\u5b58\\u4e0d\\u8db3]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u6570\\u91cf\\u8d1f\\u6570]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u6570\\u91cf\\u975e\\u6cd5]",
+    "api/tests/test_cart.py::test_cart_add_get_remove",
+    "api/tests/test_cart.py::test_order_empty_cart_rejected",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[min]",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[stock-minus-one]",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[stock-plus-one]",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[stock]",
+    "api/tests/test_concurrency.py::test_concurrent_confirm_parent_completed",
+    "api/tests/test_concurrency.py::test_concurrent_order_no_oversell[monitor]",
+    "api/tests/test_concurrency.py::test_concurrent_order_no_oversell[mouse]",
+    "api/tests/test_e2e.py::test_cancel_expired_orders",
+    "api/tests/test_e2e.py::test_full_ecommerce_flow",
+    "api/tests/test_engineering_data.py::test_cart_isolation_with_owned_resources",
+    "api/tests/test_engineering_data.py::test_cleanup_preserves_another_context",
+    "api/tests/test_engineering_data.py::test_cross_store_paid_order_has_independent_expected_amount",
+    "api/tests/test_engineering_data.py::test_partial_preparation_failure_still_cleans_created_resources",
+    "api/tests/test_engineering_data.py::test_preexisting_unlinked_product_is_not_factory_owned",
+    "api/tests/test_engineering_data.py::test_product_factory_rejects_existing_shared_name",
+    "api/tests/test_engineering_data.py::test_repeated_cleanup_does_not_remove_fixed_seed_users",
+    "api/tests/test_order.py::test_buyer_cannot_ship",
+    "api/tests/test_order.py::test_cancel_expired_idempotent",
+    "api/tests/test_order.py::test_cannot_operate_others_order",
+    "api/tests/test_order.py::test_illegal_transition_rejected",
+    "api/tests/test_order.py::test_order_full_flow",
+    "api/tests/test_order.py::test_pay_fail_cancels_and_restores_stock",
+    "api/tests/test_order.py::test_pay_fail_restores_all_products_stock",
+    "api/tests/test_order.py::test_pay_fail_then_repay_rejected",
+    "api/tests/test_order.py::test_pay_timeout_preserves_order_and_stock",
+    "api/tests/test_order_integrity.py::test_cross_store_failure_preserves_amount_and_items",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[confirm-completed-completed]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[confirm-paid-paid]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[confirm-pending-pending]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[ship-pending-\\u4e0d\\u5141\\u8bb8\\u4ece pending \\u53d8\\u4e3a shipped]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[ship-shipped-\\u4e0d\\u5141\\u8bb8\\u4ece shipped \\u53d8\\u4e3a shipped]",
+    "api/tests/test_order_integrity.py::test_order_stock_changed_rolls_back[rollback-earlier-product]",
+    "api/tests/test_order_integrity.py::test_order_stock_changed_rolls_back[single-product]",
+    "api/tests/test_order_integrity.py::test_paid_order_repay_has_no_side_effect",
+    "api/tests/test_order_integrity.py::test_parent_completes_only_after_all_suborders",
+    "api/tests/test_quality_regressions.py::test_cancel_expired_only_cancels_old_pending",
+    "api/tests/test_quality_regressions.py::test_cart_isolated_between_users",
+    "api/tests/test_quality_regressions.py::test_confirm_other_buyers_shipped_order_has_no_side_effect",
+    "api/tests/test_quality_regressions.py::test_product_negative_values_rejected_without_writes[-1-1]",
+    "api/tests/test_quality_regressions.py::test_product_negative_values_rejected_without_writes[1--1]",
+    "api/tests/test_quality_regressions.py::test_stock_missing_product_rejected",
+    "api/tests/test_quality_regressions.py::test_stock_negative_value_rejected_without_writes",
+    "api/tests/test_quality_regressions.py::test_stock_same_value_update_succeeds",
+    "api/tests/test_quality_regressions.py::test_zero_price_and_stock_are_accepted",
+    "api/tests/test_store.py::test_buyer_cannot_add_product",
+    "api/tests/test_store.py::test_buyer_cannot_create_store",
+    "api/tests/test_store.py::test_cross_store_pay_fail_restores_all",
+    "api/tests/test_store.py::test_order_split_by_store",
+    "api/tests/test_store.py::test_same_product_multi_store_stock_isolation",
+    "api/tests/test_store.py::test_seller_cannot_operate_others_store",
+    "api/tests/test_store.py::test_seller_cannot_ship_others_sub_order",
+    "ui/test_ui.py::test_add_to_cart_and_checkout[chromium]",
+    "ui/test_ui.py::test_login_buyer_redirects_to_index[chromium]",
+    "ui/test_ui.py::test_search_keyboard[chromium]",
+    "ui/test_ui.py::test_seller_create_store[chromium]",
+    "ui/test_ui.py::test_seller_login_redirects_to_seller[chromium]"
+  ],
+  "business_current": [
+    "api/tests/test_auth.py::test_health",
+    "api/tests/test_auth.py::test_login[\\u5408\\u6cd5\\u767b\\u5f55]",
+    "api/tests/test_auth.py::test_login[\\u5bc6\\u7801\\u9519\\u8bef]",
+    "api/tests/test_auth.py::test_login[\\u7528\\u6237\\u4e0d\\u5b58\\u5728]",
+    "api/tests/test_auth.py::test_me_with_expired_token",
+    "api/tests/test_auth.py::test_me_with_forged_token",
+    "api/tests/test_auth.py::test_me_with_valid_token",
+    "api/tests/test_auth.py::test_me_with_wrong_signature",
+    "api/tests/test_auth.py::test_me_without_token",
+    "api/tests/test_auth.py::test_password_stored_hashed",
+    "api/tests/test_auth.py::test_search_products[\\u5339\\u914d\\u5355\\u4e2a]",
+    "api/tests/test_auth.py::test_search_products[\\u5339\\u914d\\u591a\\u4e2a]",
+    "api/tests/test_auth.py::test_search_products[\\u65e0\\u7ed3\\u679c]",
+    "api/tests/test_auth.py::test_search_products[\\u7a7a\\u5173\\u952e\\u8bcd]",
+    "api/tests/test_cart.py::test_cart_accumulated_quantity[39-200-99]",
+    "api/tests/test_cart.py::test_cart_accumulated_quantity[40-200-100]",
+    "api/tests/test_cart.py::test_cart_accumulated_quantity[41-400-60]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u5546\\u54c1\\u4e0d\\u5b58\\u5728]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u5e93\\u5b58\\u4e0d\\u8db3]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u6570\\u91cf\\u8d1f\\u6570]",
+    "api/tests/test_cart.py::test_cart_add_boundary[\\u6570\\u91cf\\u975e\\u6cd5]",
+    "api/tests/test_cart.py::test_cart_add_get_remove",
+    "api/tests/test_cart.py::test_order_empty_cart_rejected",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[min]",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[stock-minus-one]",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[stock-plus-one]",
+    "api/tests/test_cart.py::test_quantity_stock_boundary[stock]",
+    "api/tests/test_concurrency.py::test_concurrent_confirm_parent_completed",
+    "api/tests/test_concurrency.py::test_concurrent_order_no_oversell[monitor]",
+    "api/tests/test_concurrency.py::test_concurrent_order_no_oversell[mouse]",
+    "api/tests/test_e2e.py::test_cancel_expired_orders",
+    "api/tests/test_e2e.py::test_full_ecommerce_flow",
+    "api/tests/test_engineering_data.py::test_cart_isolation_with_owned_resources",
+    "api/tests/test_engineering_data.py::test_cleanup_preserves_another_context",
+    "api/tests/test_engineering_data.py::test_cross_store_paid_order_has_independent_expected_amount",
+    "api/tests/test_engineering_data.py::test_partial_preparation_failure_still_cleans_created_resources",
+    "api/tests/test_engineering_data.py::test_preexisting_unlinked_product_is_not_factory_owned",
+    "api/tests/test_engineering_data.py::test_product_factory_rejects_existing_shared_name",
+    "api/tests/test_engineering_data.py::test_repeated_cleanup_does_not_remove_fixed_seed_users",
+    "api/tests/test_order.py::test_buyer_cannot_ship",
+    "api/tests/test_order.py::test_cancel_expired_idempotent",
+    "api/tests/test_order.py::test_cannot_operate_others_order",
+    "api/tests/test_order.py::test_illegal_transition_rejected",
+    "api/tests/test_order.py::test_order_full_flow",
+    "api/tests/test_order.py::test_pay_fail_cancels_and_restores_stock",
+    "api/tests/test_order.py::test_pay_fail_restores_all_products_stock",
+    "api/tests/test_order.py::test_pay_fail_then_repay_rejected",
+    "api/tests/test_order.py::test_pay_timeout_preserves_order_and_stock",
+    "api/tests/test_order_integrity.py::test_cross_store_failure_preserves_amount_and_items",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[confirm-completed-completed]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[confirm-paid-paid]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[confirm-pending-pending]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[ship-pending-\\u4e0d\\u5141\\u8bb8\\u4ece pending \\u53d8\\u4e3a shipped]",
+    "api/tests/test_order_integrity.py::test_invalid_order_actions_preserve_data[ship-shipped-\\u4e0d\\u5141\\u8bb8\\u4ece shipped \\u53d8\\u4e3a shipped]",
+    "api/tests/test_order_integrity.py::test_order_stock_changed_rolls_back[rollback-earlier-product]",
+    "api/tests/test_order_integrity.py::test_order_stock_changed_rolls_back[single-product]",
+    "api/tests/test_order_integrity.py::test_paid_order_repay_has_no_side_effect",
+    "api/tests/test_order_integrity.py::test_parent_completes_only_after_all_suborders",
+    "api/tests/test_quality_regressions.py::test_cancel_expired_only_cancels_old_pending",
+    "api/tests/test_quality_regressions.py::test_cart_isolated_between_users",
+    "api/tests/test_quality_regressions.py::test_confirm_other_buyers_shipped_order_has_no_side_effect",
+    "api/tests/test_quality_regressions.py::test_product_negative_values_rejected_without_writes[-1-1]",
+    "api/tests/test_quality_regressions.py::test_product_negative_values_rejected_without_writes[1--1]",
+    "api/tests/test_quality_regressions.py::test_stock_missing_product_rejected",
+    "api/tests/test_quality_regressions.py::test_stock_negative_value_rejected_without_writes",
+    "api/tests/test_quality_regressions.py::test_stock_same_value_update_succeeds",
+    "api/tests/test_quality_regressions.py::test_zero_price_and_stock_are_accepted",
+    "api/tests/test_store.py::test_buyer_cannot_add_product",
+    "api/tests/test_store.py::test_buyer_cannot_create_store",
+    "api/tests/test_store.py::test_cross_store_pay_fail_restores_all",
+    "api/tests/test_store.py::test_order_split_by_store",
+    "api/tests/test_store.py::test_same_product_multi_store_stock_isolation",
+    "api/tests/test_store.py::test_seller_cannot_operate_others_store",
+    "api/tests/test_store.py::test_seller_cannot_ship_others_sub_order",
+    "ui/test_ui.py::test_add_to_cart_and_checkout[chromium]",
+    "ui/test_ui.py::test_login_buyer_redirects_to_index[chromium]",
+    "ui/test_ui.py::test_search_keyboard[chromium]",
+    "ui/test_ui.py::test_seller_create_store[chromium]",
+    "ui/test_ui.py::test_seller_login_redirects_to_seller[chromium]"
+  ],
+  "business_equal": true,
+  "unit_count": 113,
+  "total_count": 192,
+  "runs": {
+    "e2-delivery-serial": {
+      "run_id": "ef698ddff4d0452fbfad8efa2bc20698",
+      "label": "e2-delivery-serial",
+      "suite": "all",
+      "workers": 1,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.0619999999180436,
+        "execute": 50.65600000042468,
+        "cleanup": 0.14099999982863665
+      },
+      "environments": [
+        {
+          "worker": "main",
+          "env": {
+            "DB_NAME": "shophub_test_22e0ae38eb8c4e2c860467d99e8cd062",
+            "BASE_URL": "http://127.0.0.1:50926",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "ef698ddff4d0452fbfad8efa2bc20698",
+            "TEST_ENVIRONMENT_ID": "63825c07204d4c10914101741cf4bb2a",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-serial\\main\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 18152,
+          "service_created_at": 1794754953.9728177
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-serial\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-delivery-serial\\junit.xml",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-delivery-serial\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 3,
+      "results": {
+        "tests": 192,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 52.85900000017136
+    },
+    "e2-delivery-parallel-1": {
+      "run_id": "51a1e96a53db4682801848c86aa316f0",
+      "label": "e2-delivery-parallel-1",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 4.031000000424683,
+        "execute": 28.73399999924004,
+        "cleanup": 0.29700000025331974
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_49173bffc73242d090212d82df54e8c5",
+            "BASE_URL": "http://127.0.0.1:49276",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "51a1e96a53db4682801848c86aa316f0",
+            "TEST_ENVIRONMENT_ID": "ce7427bdc68d468da60baf924938c61d",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-1\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 90644,
+          "service_created_at": 1794755007.201325
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_2b23a86b61284b2da5df631cdc73a6f1",
+            "BASE_URL": "http://127.0.0.1:65377",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "51a1e96a53db4682801848c86aa316f0",
+            "TEST_ENVIRONMENT_ID": "d770bcc27d6b40439b279d54e075f312",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-1\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 90200,
+          "service_created_at": 1794755009.189566
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-1\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-1\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-1\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 6,
+      "results": {
+        "tests": 192,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 33.061999999918044
+    },
+    "e2-delivery-parallel-2": {
+      "run_id": "1fed4965b76442139e60c37b198a6f35",
+      "label": "e2-delivery-parallel-2",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 4.0940000005066395,
+        "execute": 28.85899999924004,
+        "cleanup": 0.21900000050663948
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_cd32e356f183472db9a42fd235f0b820",
+            "BASE_URL": "http://127.0.0.1:57999",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "1fed4965b76442139e60c37b198a6f35",
+            "TEST_ENVIRONMENT_ID": "e6ce9aabe4bf4ea1a89c3f715963e5f4",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-2\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 46072,
+          "service_created_at": 1794755040.620516
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_cf6393c6307a4d0284eda5fe68759aed",
+            "BASE_URL": "http://127.0.0.1:52273",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "1fed4965b76442139e60c37b198a6f35",
+            "TEST_ENVIRONMENT_ID": "5b288037154d4df0870f6f7f8b538c37",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-2\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 91044,
+          "service_created_at": 1794755042.666123
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-2\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-2\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-2\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 6,
+      "results": {
+        "tests": 192,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 33.17200000025332
+    },
+    "e2-delivery-parallel-3": {
+      "run_id": "d87ce78cf04a4178954fb9be529b613a",
+      "label": "e2-delivery-parallel-3",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 3.968999999575317,
+        "execute": 29.656000000424683,
+        "cleanup": 0.20299999974668026
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_07aadcd0824c40038918947bc99cd50c",
+            "BASE_URL": "http://127.0.0.1:57394",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "d87ce78cf04a4178954fb9be529b613a",
+            "TEST_ENVIRONMENT_ID": "1918c56a468b4341a732bbc81f89a3bf",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-3\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 49448,
+          "service_created_at": 1794755074.1068656
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_db48562bfb0e4ee89f4722d7bb2b8382",
+            "BASE_URL": "http://127.0.0.1:61995",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "d87ce78cf04a4178954fb9be529b613a",
+            "TEST_ENVIRONMENT_ID": "2b00556827c346a782404369781835d6",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-3\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 72748,
+          "service_created_at": 1794755076.0702026
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-3\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-3\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-delivery-parallel-3\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 6,
+      "results": {
+        "tests": 192,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 33.82799999974668
+    }
+  },
+  "business_time_overlap": {
+    "e2-delivery-parallel-1": true,
+    "e2-delivery-parallel-2": true,
+    "e2-delivery-parallel-3": true
+  },
+  "isolation": {
+    "command": [
+      "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+      "-m",
+      "tools.verify_e2",
+      "--run-id",
+      "e2-isolation-final"
+    ],
+    "exitcode": 0,
+    "checks": [
+      {
+        "name": "distinct_environments",
+        "passed": true
+      },
+      {
+        "database": "shophub_test_d8d89eaabc0d45b0861bdfef79405fc8",
+        "name": "database_binding_gw0",
+        "passed": true
+      },
+      {
+        "database": "shophub_test_85d3acccd5884795a23b221451542207",
+        "name": "database_binding_gw1",
+        "passed": true
+      },
+      {
+        "A": "canceled",
+        "B": "paid",
+        "name": "payment_mode_isolation",
+        "passed": true
+      },
+      {
+        "A": "canceled",
+        "B": "pending",
+        "name": "cancel_scan_isolation",
+        "passed": true
+      },
+      {
+        "state_after_failed_payment": "canceled",
+        "name": "http200_business_failure_rejected",
+        "passed": true
+      },
+      {
+        "name": "failed_preparation_resources_removed",
+        "passed": true
+      },
+      {
+        "orders_before": 2,
+        "orders_after": 2,
+        "name": "state_wait_deadline_read_only",
+        "passed": true
+      },
+      {
+        "in_flight_after_client_timeout": 1,
+        "name": "client_timeout_does_not_finish_service",
+        "passed": true
+      },
+      {
+        "elapsed_seconds": 6.015999999828637,
+        "in_flight": 0,
+        "name": "payment_processing_finished_before_cleanup",
+        "passed": true
+      },
+      {
+        "user": 1,
+        "product": 1,
+        "order": 1,
+        "name": "cleanup_isolation",
+        "passed": true
+      }
+    ],
+    "note": "Real database/service probe; does not count as full pytest regression."
+  },
+  "code_sha256": {
+    "conftest.py": "03203c6cd52711fed09dfa95583cf0ea18294b270e825bccc2f4daa8d0fd427f",
+    "api\\api_client.py": "6215f2ad817f3e7b140f2652738c9b88bd9be2f90edf5619eab11145ed698c8a",
+    "api\\clients\\auth.py": "472d20c3e91ba46fb3ea464f9f566456e900242626bf761c7d111509b9060a71",
+    "api\\clients\\cart.py": "986f6e29b0f158060b0259425d4d9269b5f5fbd1a9daecf127099df49cf3ce98",
+    "api\\clients\\debug.py": "e1735b54fc327f65b2fa0ddaa3af0d4b40fc17985ef646ddd181cc7e8f60a41b",
+    "api\\clients\\order.py": "4711946b41e81c1a8a2defa0ff7e6f4155091fee05b4c61a9dec0ed2a3d38af3",
+    "api\\clients\\product.py": "e1d1b3342c5612213eba26028684e0a53baea2fd43b54a8e45655f84d0d8a42f",
+    "api\\clients\\store.py": "fc4937347496d98a636cfad1dcf8b56c0ba1c38ac667f02f126d21feae437963",
+    "api\\clients\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "api\\common\\assert_util.py": "aaeb8579595a8e1c99bf3823fa36d77d55b5bd109a5d2fb0c3420bb310fe35dc",
+    "api\\common\\db_util.py": "ffb349c57d540535eea6bc7d0071f3527232008805f060ba65bbb7f048acd57c",
+    "api\\common\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "api\\tests\\constants.py": "065fa104e013e9b4994db4f7e85244f736401200570299ff8c341fb308f8a8c7",
+    "api\\tests\\test_auth.py": "f38f6aeb4c045a256aa2b1d57520a53b49cd53d6c6c7e7f94cb73bc37961ebb7",
+    "api\\tests\\test_cart.py": "a3a2e093e5bf850387372059dcfbff7659f25885d6beb95bb9fee39836c42c71",
+    "api\\tests\\test_concurrency.py": "301bbdeae613bacacc47d9535fd616058b0473eef27b83670cb77217db2c0a2c",
+    "api\\tests\\test_e2e.py": "cf530c2a06b0091eb7258d7fa3f786152378dfa534e67fba5c86cf6cf042225b",
+    "api\\tests\\test_engineering_data.py": "427a8776f1bd9e8b6bdd0a59f02f3f65cfb2624a8388196c33f36e1fcaa256f9",
+    "api\\tests\\test_order.py": "33aea9e10590dda34cde3a4655ff79dfa2884c6d3e2034c9d70ea14c807b3e34",
+    "api\\tests\\test_order_integrity.py": "bf5d75b22c90f07983381f72a3fea2008661d27fe28181b6580d3eceb4072e07",
+    "api\\tests\\test_quality_regressions.py": "ebd99b1e4c4cdd8ce91180e30b4687f6e4a6b488f4ec18615149b2be5707229a",
+    "api\\tests\\test_store.py": "3f7d4360f7f1b5deca3fedac69cc59e4d7a133bcf73af1111ad33157bb6b9685",
+    "api\\tests\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "perf\\locustfile.py": "8202cf410c26daa4c320240085f6e39c59eaaa02cdb4e3ceceeba4e5978088c0",
+    "perf\\seed_data.py": "29e0f42590720d223949b77bcce3e88d49a30048e763a4f4d7402254be256f86",
+    "perf\\_compare.py": "d1db2eb8671ac2261dabfb97fb8f3be72ea456dc4b068f6546c5cf0abe1a7f80",
+    "perf\\_plot.py": "1581a1fd8fbca4686183887ae7fad414a689e4990ea8471f4480c743f1690802",
+    "server\\celery_app.py": "5449b103fd4c17d6dd82cc2abf68b89a9592aa85f06db640765044aea0004b3a",
+    "server\\db.py": "b12b0b2dca78abf8961f845de396fcc1c1e3cef59a0f937ff4b8e1257d2a1770",
+    "server\\main.py": "6ee873abd08ab26a711404cf9bdb766ced7fdd6eb43e9c3fe9e5aaef861d74f7",
+    "server\\tasks.py": "d429c5115b0dc7b2bac9e32dbe3e96bf5649a133e82eaabeb496321db827d074",
+    "test_support\\diagnostics.py": "eb402f8c7f8ff6dc14e9ce549052ae85b7ac7a415573bd9039e5ef3b92d58972",
+    "test_support\\environment_plugin.py": "765ca5c0544db32a9764501ae54110223935ef57f11371dc02fe114886f3a4fb",
+    "test_support\\factories.py": "a169d54d0cf3945470814c29515a9ab53825198df5aaf30d0dfbd6b53382533b",
+    "test_support\\pytest_plugin.py": "add988d6697bc07b22d125e21af7ba60dcffed369527d3b14c8c702af34e6a33",
+    "test_support\\scenarios.py": "62bb9a0ae21cae2a576f3636b83dc633e38a55cea12a48bcbc02e8bca6f429ca",
+    "test_support\\__init__.py": "f9593543690442dd916646cb0a1f36fbde100e2091c6ed17345dafaa90b8ed25",
+    "tools\\environments.py": "da1435b3caaf730daaf8ba426e4f4577fda363a34f373b6a2d9ae3530d97fc08",
+    "tools\\processes.py": "d30dba95814b5e4422c276bea0b6b1c8ed8582355e156a7e20abec23385246fb",
+    "tools\\recover_run.py": "95e76c34aeac077def4e4fe0473b318e0e36f3aa60cd080b458f21628ed22404",
+    "tools\\run_tests.py": "30a9dd02977664b43a9d1fb3d8fe24ad81afc0cb02957fd3a399904d69453a3e",
+    "tools\\verify_e2.py": "a8ee52aaeae4925d6454c6eef9c4e3c3651bdd0da4c15dbaf7c87cce774740d2",
+    "tools\\verify_e2_cases.py": "d9390037980e27b14eb3b4ea7f48bed58dee7d961bd0f08bac3b6cf5cb05ae9d",
+    "tools\\__init__.py": "0f213accbba98a5ebbc202ab212fd8b61d8f39713dc29f46d0b4174abf056f30",
+    "ui\\conftest.py": "4a7f6b90fe7f16f2e7cdb71c7bf880eec69321f72f6e7e2435ee67ba17ffe60a",
+    "ui\\test_ui.py": "c24c3eedf61e90f6488960b225bc7b77e79d5f0895bead880ff40a5a3969d519",
+    "ui\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ui\\pages\\base_page.py": "847068cc24e4e3c9651850a5a704f23f681ef9257108bf5a0dd3d0f5dc722af0",
+    "ui\\pages\\cart_page.py": "567ee160acc24679af33fdaa82edc5a19a55ec7c3d16c3c8c0114c7eb6caf9b7",
+    "ui\\pages\\index_page.py": "31b03886e99eed20c3d8d2400a29760535e06cdc6e5f263085e1d51c2326b713",
+    "ui\\pages\\login_page.py": "55a2935f434195093893c566dc67a6628f7eb32f1838a2d03872f16eb06f721a",
+    "ui\\pages\\orders_page.py": "aa5ca56cac50f60fbc3bf757f829b9c0a2928f9e0c64ce722be0e08a4218a67b",
+    "ui\\pages\\seller_page.py": "b14b8f9f34fa97b9dd8e0e9b9d3e451e1b2b14fd2f4a4dda0f3a7cb90d39db86",
+    "ui\\pages\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unit\\conftest.py": "95eb1f56299c6ddd0d5756d377c441d07ecab29830c9a4c3b418eac22e93530b",
+    "unit\\test_browser_port.py": "60941538449db27965d7ea845949c1a5d55b32cce594adfbd4b4205e0a91962b",
+    "unit\\test_database_init.py": "0c8a5d348d0013e3c08f788ef71ae266f70998b62f746b6c3f96204a5b62cf6c",
+    "unit\\test_data_factories.py": "8d088dda7e186c6643d9485ec9a95c7ec5eb18b3abcabc3abdec0cbf7374d159",
+    "unit\\test_diagnostics.py": "d9953207cdb4204eccbe13eb3dbaa403bd5db60a6aa13f9e7cc11271c6eacee5",
+    "unit\\test_e2_acceptance.py": "8cf389b5faa9b306aad25eb169c3dae77eae2b2e52957bd6194245faf8fe2bf6",
+    "unit\\test_environment_stop.py": "4fe58ac39ffb53d073cb7ffee3e26ddebd9888e2e8dfb54af1a5c43899ff3233",
+    "unit\\test_failure_reporting.py": "64870c4843a5e3744129045a9fd28dccd6723363cccb3dae2ea4312bf060e20c",
+    "unit\\test_fixture_lifecycle.py": "0f5d6b31788cada56268dc1f0cdf71e98336105bbed1da9f5bbd2fd8ec27c584",
+    "unit\\test_parallel_runner.py": "f64e16c3f718010cb25f31f39e7f2e627f81612c62f7aaa310d58a579ce21bfe",
+    "unit\\test_parallel_service.py": "4c90dbc8fc7ddc6860778624b1283ca1a64bdd54b6e02fd40e06e98afe7c63fe",
+    "unit\\test_quality_regressions.py": "f31da8dc18343079aeb3f39912d47ba4167b423752dbbc815d5263100e25903b",
+    "unit\\test_runner.py": "e20f07897583f3d19da5315f73bb01982c5f3c08ff597613469aa2ac04084801",
+    "unit\\test_scenario_contract.py": "182f1b22de45a048a2eae4ef12ce8e2d6803367e94df8100cd78bf07322ec834"
+  },
+  "linux_ci": {
+    "status": "success",
+    "run_id": 43727627175,
+    "url": "https://github.com/xieguocheng666-ai/shophub-test-platform/actions/runs/43727627175",
+    "snapshot": {
+      "commit": "8d1fc69eba3606ed82f1cc33503b01bc4cbea4f5",
+      "branch": "verify/shophub-e2-20261115",
+      "tree": "16e4d245767504e11e7364d8185bf74a442724b3",
+      "superseded_run": 43727459641
+    },
+    "results": {
+      "integration-results-1": {
+        "run_id": "10384b38633545d5b5f3c4895cfb3a66",
+        "label": "integration-43727627175-1",
+        "suite": "all",
+        "workers": 1,
+        "version": {
+          "commit": "8d1fc69eba3606ed82f1cc33503b01bc4cbea4f5",
+          "dirty": false
+        },
+        "exitcode": 0,
+        "pytest_exitcode": 0,
+        "timings": {
+          "prepare": 1.2317544510000005,
+          "execute": 38.677473624000015,
+          "cleanup": 0.20724742499999138
+        },
+        "environments": [
+          {
+            "worker": "main",
+            "env": {
+              "DB_NAME": "shophub_test_8a0bc1a901d24e6289586d9b2b766894",
+              "BASE_URL": "http://127.0.0.1:56691",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "10384b38633545d5b5f3c4895cfb3a66",
+              "TEST_ENVIRONMENT_ID": "e01298c38e974d86b560ee2a116095d2",
+              "TEST_ARTIFACT_DIR": "/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/main/diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 3585,
+            "service_created_at": 1794755040.01
+          }
+        ],
+        "errors": [],
+        "cleanup": {
+          "database": "removed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/test-processes.json",
+        "command": [
+          "/opt/hostedtoolcache/Python/3.11.18/x64/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "unit",
+          "api",
+          "ui",
+          "-o",
+          "addopts=",
+          "--junitxml=/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/junit.xml",
+          "--screenshot",
+          "only-on-failure",
+          "--tracing",
+          "retain-on-failure",
+          "--output=/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/ui",
+          "-q",
+          "--browser",
+          "chromium"
+        ],
+        "connection_peak_owned_databases": 3,
+        "results": {
+          "tests": 192,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "test_process_cleanup": "stopped",
+        "total_seconds": 40.116479587999976
+      },
+      "integration-results-2": {
+        "run_id": "631740483ffa403b86d0481432f49023",
+        "label": "integration-43727627175-1",
+        "suite": "all",
+        "workers": 2,
+        "version": {
+          "commit": "8d1fc69eba3606ed82f1cc33503b01bc4cbea4f5",
+          "dirty": false
+        },
+        "exitcode": 0,
+        "pytest_exitcode": 0,
+        "timings": {
+          "prepare": 2.151068103,
+          "execute": 24.237131415000007,
+          "cleanup": 0.38867861499998924
+        },
+        "environments": [
+          {
+            "worker": "gw0",
+            "env": {
+              "DB_NAME": "shophub_test_6905f7bba7214e07bf22e38d2f54d6a6",
+              "BASE_URL": "http://127.0.0.1:50522",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "631740483ffa403b86d0481432f49023",
+              "TEST_ENVIRONMENT_ID": "520813fd92514db48b1c15c3d875e214",
+              "TEST_ARTIFACT_DIR": "/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/gw0/diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 3335,
+            "service_created_at": 1794755030.97
+          },
+          {
+            "worker": "gw1",
+            "env": {
+              "DB_NAME": "shophub_test_30a444e8af1041a1a7b3f692a0f4d114",
+              "BASE_URL": "http://127.0.0.1:57578",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "631740483ffa403b86d0481432f49023",
+              "TEST_ENVIRONMENT_ID": "5e7b9c782db24ec58eb3c27d0c71cbfd",
+              "TEST_ARTIFACT_DIR": "/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/gw1/diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 3361,
+            "service_created_at": 1794755032.22
+          }
+        ],
+        "errors": [],
+        "cleanup": {
+          "database": "removed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/test-processes.json",
+        "command": [
+          "/opt/hostedtoolcache/Python/3.11.18/x64/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "unit",
+          "api",
+          "ui",
+          "-o",
+          "addopts=",
+          "--junitxml=/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/junit.xml",
+          "-n",
+          "2",
+          "--dist",
+          "load",
+          "--max-worker-restart=0",
+          "--screenshot",
+          "only-on-failure",
+          "--tracing",
+          "retain-on-failure",
+          "--output=/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/integration-43727627175-1/ui",
+          "-q",
+          "--browser",
+          "chromium"
+        ],
+        "connection_peak_owned_databases": 6,
+        "results": {
+          "tests": 192,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "test_process_cleanup": "stopped",
+        "total_seconds": 26.776881498
+      },
+      "unit-results": {
+        "run_id": "4cab52cda8fd4ac7b61c464a19321786",
+        "label": "unit-43727627175-1",
+        "suite": "unit",
+        "workers": 1,
+        "version": {
+          "commit": "8d1fc69eba3606ed82f1cc33503b01bc4cbea4f5",
+          "dirty": false
+        },
+        "exitcode": 0,
+        "pytest_exitcode": 0,
+        "timings": {
+          "prepare": 1.5989999994303616e-05,
+          "execute": 5.784222665999991,
+          "cleanup": 0.00042433200000857596
+        },
+        "environments": [],
+        "errors": [],
+        "cleanup": {
+          "service": "not_started",
+          "database": "not_created"
+        },
+        "test_process_manifest": "/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/unit-43727627175-1/test-processes.json",
+        "command": [
+          "/opt/hostedtoolcache/Python/3.11.18/x64/bin/python",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "unit",
+          "-o",
+          "addopts=",
+          "--junitxml=/home/runner/work/shophub-test-platform/shophub-test-platform/reports/engineering/unit-43727627175-1/junit.xml",
+          "-q"
+        ],
+        "results": {
+          "tests": 113,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "test_process_cleanup": "stopped",
+        "total_seconds": 5.784666023
+      }
+    },
+    "python_source_matches_local": true,
+    "later_metadata_only_change": "pytest.ini removed obsolete owned_data marker description; no behavior or test selection change."
+  },
+  "original_evidence": "D:\\my-test-framework\\reports\\engineering",
+  "faults": {
+    "init": {
+      "evidence": {
+        "fault": "init",
+        "checks": [
+          {
+            "name": "fault_injection_triggered",
+            "passed": true
+          },
+          {
+            "runner_exitcode": 2,
+            "name": "expected_exit",
+            "passed": true
+          },
+          {
+            "resources": [
+              {
+                "worker": "gw0",
+                "database_absent": true,
+                "service_absent": true
+              },
+              {
+                "worker": "gw1",
+                "database_absent": true,
+                "service_absent": true
+              }
+            ],
+            "name": "owned_resources_absent",
+            "passed": true
+          }
+        ]
+      },
+      "summary": {
+        "run_id": "f8d07b283a6a4b659151951bc27aae56",
+        "label": "e2-final-fault-init",
+        "suite": "api",
+        "workers": 2,
+        "version": {
+          "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+          "dirty": true
+        },
+        "exitcode": 2,
+        "pytest_exitcode": null,
+        "timings": {
+          "prepare": 2.5779999997466803,
+          "execute": 0,
+          "cleanup": 0.125
+        },
+        "environments": [
+          {
+            "worker": "gw0",
+            "env": {
+              "DB_NAME": "shophub_test_74952a59030b462b9d3e887132d1fcf0",
+              "BASE_URL": "http://127.0.0.1:9616",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "f8d07b283a6a4b659151951bc27aae56",
+              "TEST_ENVIRONMENT_ID": "ae30849d5f31448f8b4007b138913a28",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-init\\gw0\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 89740,
+            "service_created_at": 1794754571.2873015
+          },
+          {
+            "worker": "gw1",
+            "env": {
+              "DB_NAME": "shophub_test_c7efd202ef3f46d292e1b04740973042",
+              "BASE_URL": "http://127.0.0.1:9627",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "f8d07b283a6a4b659151951bc27aae56",
+              "TEST_ENVIRONMENT_ID": "4c66063699b344429697b1756c550f4e",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-init\\gw1\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "not_started"
+            }
+          }
+        ],
+        "errors": [
+          {
+            "phase": "prepare",
+            "type": "RunnerError",
+            "detail": "Database initialization failed; see worker service.log"
+          }
+        ],
+        "cleanup": {
+          "database": "removed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-init\\test-processes.json",
+        "test_process_cleanup": "stopped",
+        "total_seconds": 2.7029999997466803
+      }
+    },
+    "port": {
+      "evidence": {
+        "fault": "port",
+        "checks": [
+          {
+            "name": "fault_injection_triggered",
+            "passed": true
+          },
+          {
+            "runner_exitcode": 0,
+            "name": "expected_exit",
+            "passed": true
+          },
+          {
+            "resources": [
+              {
+                "worker": "gw0",
+                "database_absent": true,
+                "service_absent": true
+              },
+              {
+                "worker": "gw1",
+                "database_absent": true,
+                "service_absent": true
+              }
+            ],
+            "name": "owned_resources_absent",
+            "passed": true
+          }
+        ]
+      },
+      "summary": {
+        "run_id": "d5a4323e30584bed92f02e3e1d46e0f5",
+        "label": "e2-final-fault-port",
+        "suite": "api",
+        "workers": 2,
+        "version": {
+          "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+          "dirty": true
+        },
+        "exitcode": 0,
+        "pytest_exitcode": 0,
+        "timings": {
+          "prepare": 5.20299999974668,
+          "execute": 2.5309999994933605,
+          "cleanup": 0.25
+        },
+        "environments": [
+          {
+            "worker": "gw0",
+            "env": {
+              "DB_NAME": "shophub_test_acccf53dd4e942849a85dcc1a550581d",
+              "BASE_URL": "http://127.0.0.1:9641",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "d5a4323e30584bed92f02e3e1d46e0f5",
+              "TEST_ENVIRONMENT_ID": "4438b1fe8f35460db5bcd2509caf29a8",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-port\\gw0\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 71960,
+            "service_created_at": 1794754575.4950929
+          },
+          {
+            "worker": "gw1",
+            "env": {
+              "DB_NAME": "shophub_test_b02ba62be8e84a618a88e7b62dcb7449",
+              "BASE_URL": "http://127.0.0.1:9646",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "d5a4323e30584bed92f02e3e1d46e0f5",
+              "TEST_ENVIRONMENT_ID": "d83052a03d34489cbaf9c5970f971273",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-port\\gw1\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 38588,
+            "service_created_at": 1794754577.5270967
+          }
+        ],
+        "errors": [],
+        "cleanup": {
+          "database": "removed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-port\\test-processes.json",
+        "command": [
+          "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "api",
+          "-o",
+          "addopts=",
+          "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-fault-port\\junit.xml",
+          "-n",
+          "2",
+          "--dist",
+          "load",
+          "--max-worker-restart=0",
+          "-q",
+          "-k",
+          "test_cart_isolation_with_owned_resources"
+        ],
+        "connection_peak_owned_databases": 2,
+        "results": {
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "test_process_cleanup": "stopped",
+        "total_seconds": 7.983999999240041
+      }
+    },
+    "crash": {
+      "evidence": {
+        "fault": "crash",
+        "checks": [
+          {
+            "name": "fault_injection_triggered",
+            "passed": true
+          },
+          {
+            "runner_exitcode": 2,
+            "name": "expected_exit",
+            "passed": true
+          },
+          {
+            "resources": [
+              {
+                "worker": "gw0",
+                "database_absent": true,
+                "service_absent": true
+              },
+              {
+                "worker": "gw1",
+                "database_absent": true,
+                "service_absent": true
+              }
+            ],
+            "name": "owned_resources_absent",
+            "passed": true
+          }
+        ]
+      },
+      "summary": {
+        "run_id": "24e1678227d14754b286290e022a7c8c",
+        "label": "e2-final-fault-crash",
+        "suite": "api",
+        "workers": 2,
+        "version": {
+          "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+          "dirty": true
+        },
+        "exitcode": 2,
+        "pytest_exitcode": null,
+        "timings": {
+          "prepare": 4.171999999321997,
+          "execute": 2.1720000002533197,
+          "cleanup": 0.23400000017136335
+        },
+        "environments": [
+          {
+            "worker": "gw0",
+            "env": {
+              "DB_NAME": "shophub_test_c6e2c5386e894229a071070fe38aa42a",
+              "BASE_URL": "http://127.0.0.1:8169",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "24e1678227d14754b286290e022a7c8c",
+              "TEST_ENVIRONMENT_ID": "a11efc3b84204db3a6aaaa3cd0be5b4c",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-crash\\gw0\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 85232,
+            "service_created_at": 1794754583.1200662
+          },
+          {
+            "worker": "gw1",
+            "env": {
+              "DB_NAME": "shophub_test_1349c91adeb047c092ce300a39c86cb1",
+              "BASE_URL": "http://127.0.0.1:8194",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "24e1678227d14754b286290e022a7c8c",
+              "TEST_ENVIRONMENT_ID": "f3a016c65b73477d822b1283fa24131e",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-crash\\gw1\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 34088,
+            "service_created_at": 1794754585.241366
+          }
+        ],
+        "errors": [
+          {
+            "phase": "execute",
+            "type": "RunnerError",
+            "detail": "Environment contaminated or worker crashed; stopping run"
+          }
+        ],
+        "cleanup": {
+          "database": "removed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-crash\\test-processes.json",
+        "command": [
+          "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "api",
+          "-o",
+          "addopts=",
+          "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-fault-crash\\junit.xml",
+          "-n",
+          "2",
+          "--dist",
+          "load",
+          "--max-worker-restart=0",
+          "-q",
+          "-k",
+          "test_cart_isolation_with_owned_resources"
+        ],
+        "connection_peak_owned_databases": 1,
+        "test_process_cleanup": "stopped",
+        "total_seconds": 6.57799999974668
+      }
+    },
+    "interrupt": {
+      "evidence": {
+        "fault": "interrupt",
+        "checks": [
+          {
+            "name": "fault_injection_triggered",
+            "passed": true
+          },
+          {
+            "runner_exitcode": 130,
+            "name": "expected_exit",
+            "passed": true
+          },
+          {
+            "name": "interrupted_during_test_execution",
+            "passed": true
+          },
+          {
+            "resources": [
+              {
+                "worker": "gw0",
+                "database_absent": true,
+                "service_absent": true
+              },
+              {
+                "worker": "gw1",
+                "database_absent": true,
+                "service_absent": true
+              }
+            ],
+            "name": "owned_resources_absent",
+            "passed": true
+          }
+        ]
+      },
+      "summary": {
+        "run_id": "620a0523afdf42c18d638dcf1a815a03",
+        "label": "e2-final-fault-interrupt",
+        "suite": "api",
+        "workers": 2,
+        "version": {
+          "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+          "dirty": true
+        },
+        "exitcode": 130,
+        "pytest_exitcode": null,
+        "timings": {
+          "prepare": 4.07799999974668,
+          "execute": 2.1869999999180436,
+          "cleanup": 0.20300000067800283
+        },
+        "environments": [
+          {
+            "worker": "gw0",
+            "env": {
+              "DB_NAME": "shophub_test_be0cb7ae35a646a39f0f4beade63b0df",
+              "BASE_URL": "http://127.0.0.1:2058",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "620a0523afdf42c18d638dcf1a815a03",
+              "TEST_ENVIRONMENT_ID": "a52b7626eb7b43448491688a687c0734",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-interrupt\\gw0\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 77668,
+            "service_created_at": 1794754590.431169
+          },
+          {
+            "worker": "gw1",
+            "env": {
+              "DB_NAME": "shophub_test_73ba032c5f5d42d096df42e45e886f76",
+              "BASE_URL": "http://127.0.0.1:2068",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "620a0523afdf42c18d638dcf1a815a03",
+              "TEST_ENVIRONMENT_ID": "e5120f979edc4768b18c9c43b63344b4",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-interrupt\\gw1\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 90980,
+            "service_created_at": 1794754592.4965165
+          }
+        ],
+        "errors": [
+          {
+            "phase": "execute",
+            "type": "KeyboardInterrupt"
+          }
+        ],
+        "cleanup": {
+          "database": "removed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-interrupt\\test-processes.json",
+        "command": [
+          "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "api",
+          "-o",
+          "addopts=",
+          "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-fault-interrupt\\junit.xml",
+          "-n",
+          "2",
+          "--dist",
+          "load",
+          "--max-worker-restart=0",
+          "-q",
+          "-k",
+          "test_cart_isolation_with_owned_resources"
+        ],
+        "connection_peak_owned_databases": 1,
+        "test_process_cleanup": "stopped",
+        "total_seconds": 6.468000000342727
+      }
+    },
+    "cleanup": {
+      "evidence": {
+        "fault": "cleanup",
+        "checks": [
+          {
+            "name": "fault_injection_triggered",
+            "passed": true
+          },
+          {
+            "runner_exitcode": 2,
+            "name": "expected_exit",
+            "passed": true
+          },
+          {
+            "name": "failed_cleanup_is_recorded",
+            "passed": true
+          },
+          {
+            "name": "explicit_manifest_recovery",
+            "passed": true
+          },
+          {
+            "resources": [
+              {
+                "worker": "gw0",
+                "database_absent": true,
+                "service_absent": true
+              },
+              {
+                "worker": "gw1",
+                "database_absent": true,
+                "service_absent": true
+              }
+            ],
+            "name": "owned_resources_absent",
+            "passed": true
+          }
+        ]
+      },
+      "summary": {
+        "run_id": "90d68409d30842c1b03d3177ceac7a7e",
+        "label": "e2-final-fault-cleanup",
+        "suite": "api",
+        "workers": 2,
+        "version": {
+          "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+          "dirty": true
+        },
+        "exitcode": 2,
+        "pytest_exitcode": 0,
+        "timings": {
+          "prepare": 4.063000000081956,
+          "execute": 2.483999999240041,
+          "cleanup": 0.14100000075995922
+        },
+        "environments": [
+          {
+            "worker": "gw0",
+            "env": {
+              "DB_NAME": "shophub_test_05f663e0b3a94b32b874f9b1dbd9fb01",
+              "BASE_URL": "http://127.0.0.1:2115",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "90d68409d30842c1b03d3177ceac7a7e",
+              "TEST_ENVIRONMENT_ID": "3ed78cf04bc9444cb4737907406ff423",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-cleanup\\gw0\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "removed",
+              "service": "stopped"
+            },
+            "service_pid": 29140,
+            "service_created_at": 1794754597.6403804
+          },
+          {
+            "worker": "gw1",
+            "env": {
+              "DB_NAME": "shophub_test_ff82fb73984f4eaa878ec0ad815b5cdc",
+              "BASE_URL": "http://127.0.0.1:2134",
+              "DEBUG_MODE": "1",
+              "TEST_RUN_ID": "90d68409d30842c1b03d3177ceac7a7e",
+              "TEST_ENVIRONMENT_ID": "9350288a6c144710a38c16d2a6cd349c",
+              "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-cleanup\\gw1\\diagnostics",
+              "DB_POOL_MIN": "0",
+              "DB_POOL_MAX": "10"
+            },
+            "cleanup": {
+              "database": "failed",
+              "service": "stopped"
+            },
+            "service_pid": 75172,
+            "service_created_at": 1794754599.6990461
+          }
+        ],
+        "errors": [
+          {
+            "phase": "cleanup_database",
+            "type": "RuntimeError"
+          }
+        ],
+        "cleanup": {
+          "database": "failed",
+          "service": "stopped"
+        },
+        "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-fault-cleanup\\test-processes.json",
+        "command": [
+          "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "-p",
+          "test_support.environment_plugin",
+          "api",
+          "-o",
+          "addopts=",
+          "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-fault-cleanup\\junit.xml",
+          "-n",
+          "2",
+          "--dist",
+          "load",
+          "--max-worker-restart=0",
+          "-q",
+          "-k",
+          "test_cart_isolation_with_owned_resources"
+        ],
+        "connection_peak_owned_databases": 2,
+        "results": {
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "test_process_cleanup": "stopped",
+        "total_seconds": 6.688000000081956
+      }
+    }
+  },
+  "previous_complete_runs": {
+    "e2-final-serial": {
+      "run_id": "9b19afccefc3483f9e7bd1962003b574",
+      "label": "e2-final-serial",
+      "suite": "all",
+      "workers": 1,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.016000000759959,
+        "execute": 51.07799999974668,
+        "cleanup": 0.15599999949336052
+      },
+      "environments": [
+        {
+          "worker": "main",
+          "env": {
+            "DB_NAME": "shophub_test_f64204684931416ebe3db67ccd5a2bf6",
+            "BASE_URL": "http://127.0.0.1:13735",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "9b19afccefc3483f9e7bd1962003b574",
+            "TEST_ENVIRONMENT_ID": "03f906b619724169963c0d586cd5ee84",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-serial\\main\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 88960,
+          "service_created_at": 1794754378.6970332
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-serial\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-serial\\junit.xml",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-final-serial\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 3,
+      "results": {
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 53.25
+    },
+    "e2-final-parallel-1": {
+      "run_id": "c1627c120ee04c439ddd261869397c54",
+      "label": "e2-final-parallel-1",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 4.078000000678003,
+        "execute": 29.688000000081956,
+        "cleanup": 0.25
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_50af58f21e314bf1a45d8b920d6f574f",
+            "BASE_URL": "http://127.0.0.1:2298",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "c1627c120ee04c439ddd261869397c54",
+            "TEST_ENVIRONMENT_ID": "1a53cbde338347d699ca6da5a42f03b9",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-1\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 44072,
+          "service_created_at": 1794754432.3787725
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_e022ad2a1cf24601bfb90dc507120cfd",
+            "BASE_URL": "http://127.0.0.1:2307",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "c1627c120ee04c439ddd261869397c54",
+            "TEST_ENVIRONMENT_ID": "22ce4b888a9046299f72af616fe9870a",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-1\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 40768,
+          "service_created_at": 1794754434.3850439
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-1\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-1\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-1\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 6,
+      "results": {
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 34.01600000075996
+    },
+    "e2-final-parallel-2": {
+      "run_id": "77873f96a1774e64bcee915d75dd8a20",
+      "label": "e2-final-parallel-2",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 4.04700000025332,
+        "execute": 28.79700000025332,
+        "cleanup": 0.2189999995753169
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_6a9564c069544c9daaaa776c24800650",
+            "BASE_URL": "http://127.0.0.1:2071",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "77873f96a1774e64bcee915d75dd8a20",
+            "TEST_ENVIRONMENT_ID": "fcf81930c1654b5294bd87d4e6d9f604",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-2\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 18716,
+          "service_created_at": 1794754466.7018352
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_3af1ff28dbe3447ebbfe266634a0bce9",
+            "BASE_URL": "http://127.0.0.1:2079",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "77873f96a1774e64bcee915d75dd8a20",
+            "TEST_ENVIRONMENT_ID": "8803a329d1f74c6bafa478967ce9260f",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-2\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 46896,
+          "service_created_at": 1794754468.7309403
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-2\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-2\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-2\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 6,
+      "results": {
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 33.063000000081956
+    },
+    "e2-final-parallel-3": {
+      "run_id": "c70b0ae02c86440ebd3220ecbdf262d7",
+      "label": "e2-final-parallel-3",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 4.0150000005960464,
+        "execute": 29.343999999575317,
+        "cleanup": 0.23400000017136335
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_cc1cd0813ea241cc807cdcd838196650",
+            "BASE_URL": "http://127.0.0.1:12044",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "c70b0ae02c86440ebd3220ecbdf262d7",
+            "TEST_ENVIRONMENT_ID": "9158f270548444d58173aa746111780e",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-3\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 45592,
+          "service_created_at": 1794754500.0802572
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_12a4135c14b04de082f74fde62a55613",
+            "BASE_URL": "http://127.0.0.1:12053",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "c70b0ae02c86440ebd3220ecbdf262d7",
+            "TEST_ENVIRONMENT_ID": "8ed6c1f6300b4478a347141874fa8438",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-3\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 66448,
+          "service_created_at": 1794754502.1230736
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-3\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-3\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-final-parallel-3\\ui",
+        "-q",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 6,
+      "results": {
+        "tests": 189,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "test_process_cleanup": "stopped",
+      "total_seconds": 33.59300000034273
+    },
+    "e2-isolation-final": {
+      "run_id": "eece85bbf2674b37a9ad08ecdb92971c",
+      "label": "e2-isolation-final",
+      "suite": "api",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 4.0150000005960464,
+        "execute": 6.890999999828637,
+        "cleanup": 0.1869999999180436
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_d8d89eaabc0d45b0861bdfef79405fc8",
+            "BASE_URL": "http://127.0.0.1:5958",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "eece85bbf2674b37a9ad08ecdb92971c",
+            "TEST_ENVIRONMENT_ID": "465550b4bdad47c8999fd1f802040787",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-isolation-final\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 34192,
+          "service_created_at": 1794754297.253906
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_85d3acccd5884795a23b221451542207",
+            "BASE_URL": "http://127.0.0.1:5966",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "eece85bbf2674b37a9ad08ecdb92971c",
+            "TEST_ENVIRONMENT_ID": "2448b3bd8f344d56bd977835e7277baa",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-isolation-final\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 87884,
+          "service_created_at": 1794754299.2544658
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-isolation-final\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "api",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-isolation-final\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0"
+      ],
+      "connection_peak_owned_databases": 4,
+      "total_seconds": 11.093000000342727
+    },
+    "e2-four-smoke": {
+      "run_id": "fdc7a5536ed144788c7e6f3957e4ace1",
+      "label": "e2-four-smoke",
+      "suite": "api",
+      "workers": 4,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 8.125,
+        "execute": 3.0,
+        "cleanup": 0.4690000005066395
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_d00510cea63048eda1b5e146268ae244",
+            "BASE_URL": "http://127.0.0.1:6158",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "fdc7a5536ed144788c7e6f3957e4ace1",
+            "TEST_ENVIRONMENT_ID": "fd00a72ea49d40d2bd4dce5d025a795b",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-four-smoke\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 67392,
+          "service_created_at": 1794754308.7609556
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_53af5eebf05042a4ae6aa0ecbde8d70f",
+            "BASE_URL": "http://127.0.0.1:6170",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "fdc7a5536ed144788c7e6f3957e4ace1",
+            "TEST_ENVIRONMENT_ID": "b0c5ca2a4726485cb1dffd5ccfe89c0d",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-four-smoke\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 90700,
+          "service_created_at": 1794754310.7897277
+        },
+        {
+          "worker": "gw2",
+          "env": {
+            "DB_NAME": "shophub_test_96781934016744b283a799c3c27eeacb",
+            "BASE_URL": "http://127.0.0.1:6180",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "fdc7a5536ed144788c7e6f3957e4ace1",
+            "TEST_ENVIRONMENT_ID": "68c53d1ed86e4b3c8f03f9962ababe8f",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-four-smoke\\gw2\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 91092,
+          "service_created_at": 1794754312.8195765
+        },
+        {
+          "worker": "gw3",
+          "env": {
+            "DB_NAME": "shophub_test_d42f97880bde4e04a933b9ddbcbce260",
+            "BASE_URL": "http://127.0.0.1:6188",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "fdc7a5536ed144788c7e6f3957e4ace1",
+            "TEST_ENVIRONMENT_ID": "82c673123e7446c5b2a7edc86c385120",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-four-smoke\\gw3\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 69820,
+          "service_created_at": 1794754314.824511
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-four-smoke\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "api",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-four-smoke\\junit.xml",
+        "-n",
+        "4",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "-q",
+        "-k",
+        "test_cart_isolation_with_owned_resources or test_cross_store_paid_order_has_independent_expected_amount or test_cleanup_preserves_another_context or test_partial_preparation_failure_still_cleans_created_resources"
+      ],
+      "connection_peak_owned_databases": 8,
+      "results": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "total_seconds": 11.59400000050664
+    },
+    "e2-cases-final-reverse": {
+      "run_id": "ee7cd331e7e64a3ea506a1499eb9d181",
+      "label": "e2-cases-final-reverse",
+      "suite": "api",
+      "workers": 1,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.093999999575317,
+        "execute": 37.10900000017136,
+        "cleanup": 0.14099999982863665
+      },
+      "environments": [
+        {
+          "worker": "main",
+          "env": {
+            "DB_NAME": "shophub_test_02e1342855b740fbb49142c1355d5907",
+            "BASE_URL": "http://127.0.0.1:11285",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "ee7cd331e7e64a3ea506a1499eb9d181",
+            "TEST_ENVIRONMENT_ID": "12245480784c45cda593ee82f9cb8beb",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-cases-final-reverse\\main\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 91020,
+          "service_created_at": 1794754124.7655363
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "api",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-cases-final-reverse\\junit.xml",
+        "-q"
+      ],
+      "connection_peak_owned_databases": 3,
+      "results": {
+        "tests": 74,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "total_seconds": 39.34399999957532
+    },
+    "e2-cases-verified-repeat": {
+      "run_id": "99a94aa7bedc440ca0202e221cc2b3fa",
+      "label": "e2-cases-verified-repeat",
+      "suite": "api",
+      "workers": 1,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 0,
+      "pytest_exitcode": 0,
+      "timings": {
+        "prepare": 2.0319999996572733,
+        "execute": 4.436999999918044,
+        "cleanup": 0.14100000075995922
+      },
+      "environments": [
+        {
+          "worker": "main",
+          "env": {
+            "DB_NAME": "shophub_test_c797b03e3fff49ba9d0074e66d9a222d",
+            "BASE_URL": "http://127.0.0.1:7933",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "99a94aa7bedc440ca0202e221cc2b3fa",
+            "TEST_ENVIRONMENT_ID": "f6e1b81189f64752986da5de05dc4519",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-repeat\\main\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 85164,
+          "service_created_at": 1794754271.7354662
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "api",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-repeat\\junit.xml",
+        "-q",
+        "-k",
+        "test_cart_isolation_with_owned_resources"
+      ],
+      "connection_peak_owned_databases": 2,
+      "results": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "total_seconds": 6.610000000335276
+    },
+    "e2-cases-verified-api-failure": {
+      "run_id": "9c444e5f2a354dbc9fa6fa41a6a649e6",
+      "label": "e2-cases-verified-api-failure",
+      "suite": "api",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 1,
+      "pytest_exitcode": 1,
+      "timings": {
+        "prepare": 4.17200000025332,
+        "execute": 2.796999999321997,
+        "cleanup": 0.23500000033527613
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_8152b18fe4114985b34174f35853df82",
+            "BASE_URL": "http://127.0.0.1:8062",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "9c444e5f2a354dbc9fa6fa41a6a649e6",
+            "TEST_ENVIRONMENT_ID": "e9df8ee338914cb49b93b51126d9788f",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-api-failure\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 58040,
+          "service_created_at": 1794754278.91208
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_4be9b3e016bb43258decbc911411a4ae",
+            "BASE_URL": "http://127.0.0.1:8071",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "9c444e5f2a354dbc9fa6fa41a6a649e6",
+            "TEST_ENVIRONMENT_ID": "38ae5e617a1f4f74b46619a3fc491783",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-api-failure\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 85288,
+          "service_created_at": 1794754280.9949112
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "api",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-api-failure\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "-q",
+        "-k",
+        "test_cross_store_paid_order_has_independent_expected_amount"
+      ],
+      "connection_peak_owned_databases": 2,
+      "results": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "total_seconds": 7.203999999910593
+    },
+    "e2-cases-verified-ui-failure": {
+      "run_id": "9445f3ab697c49a1a9399a5674eede30",
+      "label": "e2-cases-verified-ui-failure",
+      "suite": "all",
+      "workers": 2,
+      "version": {
+        "commit": "dbe9c2c6b8856c2ab2f9fab56f3afb7923def995",
+        "dirty": true
+      },
+      "exitcode": 1,
+      "pytest_exitcode": 1,
+      "timings": {
+        "prepare": 4.04700000025332,
+        "execute": 5.45299999974668,
+        "cleanup": 0.2660000007599592
+      },
+      "environments": [
+        {
+          "worker": "gw0",
+          "env": {
+            "DB_NAME": "shophub_test_b7816a2ca42b4399aeb1f115a25f622e",
+            "BASE_URL": "http://127.0.0.1:8145",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "9445f3ab697c49a1a9399a5674eede30",
+            "TEST_ENVIRONMENT_ID": "cc686126c6674523ae39bea13afc04cd",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-ui-failure\\gw0\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 88352,
+          "service_created_at": 1794754286.589967
+        },
+        {
+          "worker": "gw1",
+          "env": {
+            "DB_NAME": "shophub_test_d0531e199a4d46d0936d976ae50f2162",
+            "BASE_URL": "http://127.0.0.1:8157",
+            "DEBUG_MODE": "1",
+            "TEST_RUN_ID": "9445f3ab697c49a1a9399a5674eede30",
+            "TEST_ENVIRONMENT_ID": "9c998f6192f7432aa3d31752809441e6",
+            "TEST_ARTIFACT_DIR": "D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-ui-failure\\gw1\\diagnostics",
+            "DB_POOL_MIN": "0",
+            "DB_POOL_MAX": "10"
+          },
+          "cleanup": {
+            "database": "removed",
+            "service": "stopped"
+          },
+          "service_pid": 67972,
+          "service_created_at": 1794754288.5811496
+        }
+      ],
+      "errors": [],
+      "cleanup": {
+        "database": "removed",
+        "service": "stopped"
+      },
+      "test_process_manifest": "D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-ui-failure\\test-processes.json",
+      "command": [
+        "D:\\my-test-framework\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-p",
+        "test_support.environment_plugin",
+        "unit",
+        "api",
+        "ui",
+        "-o",
+        "addopts=",
+        "--junitxml=D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-ui-failure\\junit.xml",
+        "-n",
+        "2",
+        "--dist",
+        "load",
+        "--max-worker-restart=0",
+        "--screenshot",
+        "only-on-failure",
+        "--tracing",
+        "retain-on-failure",
+        "--output=D:\\my-test-framework\\reports\\engineering\\e2-cases-verified-ui-failure\\ui",
+        "-q",
+        "-k",
+        "test_add_to_cart_and_checkout",
+        "--browser",
+        "chromium"
+      ],
+      "connection_peak_owned_databases": 2,
+      "results": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "total_seconds": 9.76600000075996
+    }
+  },
+  "final_resource_checks": [
+    {
+      "run": "e2-accepted-parallel-1",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-accepted-serial",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-cases-final-repeat",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-cases-final-reverse",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-cases-reverse",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-cases-verified-api-failure",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-cases-verified-repeat",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-cases-verified-ui-failure",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-delivery-parallel-1",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-delivery-parallel-2",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-delivery-parallel-3",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-delivery-serial",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-fault-cleanup",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-fault-crash",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-fault-init",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-fault-interrupt",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-fault-port",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-fault-cleanup",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-fault-crash",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-fault-init",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-fault-interrupt",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-fault-port",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-parallel-1",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-parallel-2",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-parallel-3",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-final-serial",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-first",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-four-smoke",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw2",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw3",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-isolation-01",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-isolation-final",
+      "resources": [
+        {
+          "worker": "gw0",
+          "database_absent": true,
+          "service_absent": true
+        },
+        {
+          "worker": "gw1",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-serial",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    },
+    {
+      "run": "e2-timeout-fix",
+      "resources": [
+        {
+          "worker": "main",
+          "database_absent": true,
+          "service_absent": true
+        }
+      ]
+    }
+  ],
+  "final_collection_summary": "192 tests collected in 0.40s",
+  "final_test_process_check": {
+    "registered_identities_checked": 383,
+    "matching_live_processes": []
+  }
+}

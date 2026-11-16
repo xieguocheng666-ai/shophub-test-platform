@@ -6,7 +6,7 @@ import pytest
 from api.common.assert_util import assert_ok
 
 
-pytestmark = pytest.mark.owned_data
+
 
 
 def test_cart_isolation_with_owned_resources(scenario, db):

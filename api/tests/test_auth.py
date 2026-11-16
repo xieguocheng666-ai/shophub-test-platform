@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import os
+
 import allure
 import jwt as pyjwt
 import pytest
@@ -50,7 +52,12 @@ def _load_search_cases():
 def test_health(api_client):
     resp = api_client.health()
     assert_ok(resp)
-    assert resp.json() == {"status": "ok"}
+    assert resp.json()["status"] == "ok"
+    if os.getenv("TEST_ENVIRONMENT_ID"):
+        assert resp.json()["environment_id"] == os.environ["TEST_ENVIRONMENT_ID"]
+        assert resp.json()["database"] == os.environ["DB_NAME"]
+    else:
+        assert resp.json() == {"status": "ok"}
 
 
 @allure.severity(allure.severity_level.CRITICAL)
@@ -119,7 +126,7 @@ def test_me_with_expired_token(base_url, config):
 def test_me_with_valid_token(api_client, login_user):
     resp = api_client.me()
     assert_ok(resp)
-    assert resp.json()["username"] == "alice"
+    assert resp.json()["username"] == login_user["username"]
     assert resp.json()["nickname"] == "爱丽丝"
 
 

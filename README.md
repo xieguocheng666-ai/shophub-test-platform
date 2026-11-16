@@ -24,7 +24,7 @@ ShopHub 是个人测试练习项目：围绕模拟商城建立接口、网页和
 
 ## 本地运行（Windows PowerShell）
 
-推荐使用下面的执行入口。它读取`.env`中的MySQL连接信息，为每轮创建唯一数据库和本机服务，执行结束后清理；账号需要建库、删库权限。测试仍顺序运行，使用单服务进程。
+推荐使用下面的执行入口。它读取`.env`中的MySQL连接信息，为每个测试进程创建唯一数据库和本机商城服务，执行结束后清理；账号需要建库、删库权限。接口及完整回归默认两个测试进程，各进程内部顺序执行。
 
 ```powershell
 # 项目根目录：创建虚拟环境并安装依赖
@@ -46,19 +46,21 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 # 完整单元、接口与网页回归
 .\.venv\Scripts\python.exe -m tools.run_tests --suite all -- -q --browser chromium
 
-# 只选择已经迁移为本例数据管理的用例
-.\.venv\Scripts\python.exe -m tools.run_tests --suite api -- -m owned_data -q
+# 单进程对照：同一套环境管理和业务用例
+.\.venv\Scripts\python.exe -m tools.run_tests --suite all --workers 1 -- -q --browser chromium
 ```
 
-`--`之后是传给pytest的参数，`-k`按名称筛选、`-m`按标记筛选。执行器始终加入所选套件目录，额外传文件路径不会取代整个套件。`--run-id`可指定一次运行的编号；已有同名结果目录会被拒绝覆盖。
+`--`之后是传给pytest的参数，`-k`按名称筛选、`-m`按标记筛选。执行器始终加入所选套件目录，额外传文件路径不会取代整个套件。`--workers`指定正整数并行数；纯单元默认1且不创建商城环境。`--run-id`是可读标签，资源所有权使用额外生成的内部随机标识；已有同名结果目录会被拒绝覆盖。运行器拒绝覆盖并行数、服务地址及报告位置的透传参数。
 
-结果位于`reports/engineering/<运行编号>/`：`summary.json`记录版本、退出码和准备/执行/清理耗时，`junit.xml`是供工具读取的测试结果，`service.log`是服务日志，`diagnostics/`保存失败用例的脱敏请求及阶段。网页失败另存截图与操作轨迹。失败诊断中的请求标识`X-Request-ID`可用于查找服务日志中的同一次请求。
+结果位于`reports/engineering/<运行编号>/`：`summary.json`记录版本、退出码和准备/执行/清理耗时，`junit.xml`是供工具读取的测试结果，`resources.json`是无密钥的资源清单；各`gw0/`、`gw1/`（测试进程编号）目录下的`service.log`记录对应服务日志，`cases.jsonl`记录实际分配及起止时间，`diagnostics/`保存失败用例的脱敏请求及阶段。网页失败另存截图与操作轨迹。失败诊断中的请求标识`X-Request-ID`可用于查找服务日志中的同一次请求。
 
 例如接口返回错误时，先看summary的失败阶段，再从diagnostics找请求标识，在service.log中搜索该标识；不要直接把含真实密码的`.env`附进报告。
 
+强杀或断电后，可用指定清单恢复：`.venv/Scripts/python.exe -m tools.recover_run --manifest reports/engineering/运行编号/resources.json`。恢复先核对并停止已登记的测试进程和商城服务，再删本轮库；身份不符时拒绝清理。不按数据库名前缀批量删除。原始日志保留用于诊断；课件本轮延期，完整实测见[E2验收](docs/quality-review-2026-11-15-e2.md)。
+
 ### 手动启动（需要自己管理环境时）
 
-旧接口/网页用例会清空全库并重播种子；只能连接可丢弃的专用库。`owned_data`标记仅对已迁移用例跳过重置，不表示全套可共享库并行。
+普通业务用例使用scenario（本例资源及业务状态准备器），不再自动清空全库；登录和搜索保留只读种子。手动方式只支持单进程，须自行确保专用库与服务匹配；并行使用正式运行器。支付收尾最多等待15秒确认服务端处理归零，再恢复开关和清理；清理失败会停止本轮。
 
 ```powershell
 # 终端1：先确认该库可丢弃；初始化已支持DB_NAME，不再硬编码shop
@@ -85,9 +87,9 @@ allure serve reports
 docker compose up --build --abort-on-container-exit --exit-code-from test
 ```
 
-该命令按Compose配置启动5个服务，以test的退出码作为结果；使用本地演示凭据。本轮未运行Compose。
+该命令按Compose配置启动5个服务，以test的退出码作为结果；使用本地演示凭据。Compose共享商城、数据库和定时任务，不支持E2的每进程隔离入口；本轮未运行Compose。
 
-GitHub Actions的持续集成（CI /ˌsiː ˈaɪ/，代码变更后自动检查）先跑单元，再使用MySQL服务运行完整套件，始终上传执行目录，保留14天。触发包括main/master/improve-test-design推送、拉取请求和手动执行。流水线复用上述执行器；配置存在不代表远程运行通过。MySQL 8认证依赖按[PyMySQL官方说明](https://pymysql.readthedocs.io/en/latest/user/installation.html)声明`PyMySQL[rsa]`。
+GitHub Actions的持续集成（CI /ˌsiː ˈaɪ/，代码变更后自动检查）先跑单元，再使用MySQL服务运行单进程对照及默认双进程完整套件，始终上传执行目录，保留14天。触发包括main/master/improve-test-design推送、拉取请求和手动执行。流水线复用上述执行器；配置存在不代表远程运行通过。MySQL 8认证依赖按[PyMySQL官方说明](https://pymysql.readthedocs.io/en/latest/user/installation.html)声明`PyMySQL[rsa]`。
 
 ## 测试数量与证据
 
